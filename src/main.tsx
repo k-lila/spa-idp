@@ -1,12 +1,15 @@
-import "./config"; // valida VITE_* no boot; a etapa 3 passa a consumir via auth/userManager
+import "./config"; // valida VITE_* no boot; quem consome é auth/userManager
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router";
 import "./index.css";
+import { AuthProvider } from "./auth/AuthProvider";
 import { router } from "./router";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
   </StrictMode>,
 );
