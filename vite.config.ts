@@ -6,6 +6,8 @@ import { defineConfig } from "vite";
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // Porta fixa: o IdP fake rejeita redirect_uri/CORS em outra porta
+  server: { port: 5173, strictPort: true },
   resolve: {
     // Espelhado em tsconfig.app.json (paths)
     alias: {

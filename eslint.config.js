@@ -21,6 +21,11 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  {
+    files: ["dev/**/*.js"],
+    extends: [js.configs.recommended],
+    languageOptions: { globals: globals.node },
+  },
   // Último: só desliga regras que conflitam com o Prettier
   eslintConfigPrettier,
 ]);

@@ -1,3 +1,4 @@
+import "./config"; // valida VITE_* no boot; a etapa 3 passa a consumir via auth/userManager
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router";

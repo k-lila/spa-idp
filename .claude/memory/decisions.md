@@ -26,6 +26,8 @@
 | 2026-09-14 | Fixar npm e Node 22 LTS como base de ferramentas | docs/adr/0001-fixar-npm-e-node-22-como-base-de-ferramentas.md |
 | 2026-09-14 | Adotar Tailwind CSS v4 pelo plugin oficial do Vite | docs/adr/0002-adotar-tailwind-v4-pelo-plugin-do-vite.md |
 | 2026-09-14 | Usar React Router v7 como biblioteca, em modo data router | docs/adr/0003-usar-react-router-v7-como-biblioteca-em-modo-data-router.md |
+| 2026-09-15 | Rodar o IdP fake local com `oidc-provider` em JavaScript ESM, montado em `/o` | docs/adr/0004-rodar-idp-fake-local-com-oidc-provider-em-javascript.md |
+| 2026-09-15 | Validar as variáveis `VITE_*` no boot em `src/config.ts`, sem zod | docs/adr/0005-validar-variaveis-de-ambiente-no-boot-em-config-ts.md |
 
 ---
 
@@ -51,3 +53,17 @@
 **Regra ao acrescentar:** se a decisão tem ADR, escreva **uma linha** no índice e o resto
 no ADR. Se não tem, escreva a entrada completa aqui. Um log que cresce sem poda não é
 memória — é sedimento.
+
+## [2026-09-15] TASK-002 · IdP fake + `.env.example` + `src/config.ts` (etapa 2 do §8)
+- **Decisão:** fake em `dev/idp-fake/server.js` (JS ESM, `oidc-provider` 9 + `express` 5 como devDeps do root, `npm run idp`), espelhando só o contrato consumido pela SPA (client público `spa-local`, PKCE S256, claims `sub/name/email` no `id_token`, sem `end_session_endpoint`, CORS por client p/ 5173, rotas default ≠ do IdP real). `config.ts` é o único leitor de `import.meta.env`, sem zod e sem default; `throw` no topo do módulo. `strictPort` no Vite. `sub` = login digitado (`fake-user-1`). Plano §4/§5 (zod em `config.ts`) e §6 (`sub` fixo) ficam desatualizados de propósito — ADRs 0004/0005 registram.
+- **ADR:** 0004, 0005 (índice acima).
+- **Tech-debt / melhorias:**
+  - Fechado: tech-debt da TASK-001 sobre fake em TS (decidido `.js` ESM fora do `tsc -b`, lint Node básico).
+  - Adiado p/ etapa 3 / §7.2 (**ressalva do senso-critico**, agora nas Negativas da ADR 0004): fake é *same-site* com a SPA; cookie do IdP viaja em dev e não em prod. `restoreSession` NÃO pode ser desenhado assumindo `signinSilent`/iframe `prompt=none` funciona só porque passa no fake. Também: fake rotaciona refresh token p/ client público (real não) — `StrictMode` + `signinSilent` concorrente pode dar logout fantasma só em dev.
+  - Adiado p/ etapa 4: (a) barra final em `VITE_OIDC_ISSUER` só quebra quando `jose` comparar `iss` com `config.oidc.issuer`, não no discovery; (b) fake nunca emite claim vazia, o `monolito-idp` pode (`name`/`email` `""`) — schema zod das claims não pode ser escrito olhando o fake; e2e da etapa 7 só conhece "Usuária de Teste".
+  - Adiado p/ etapa 7: demandas de teste do QA — T-01/T-02/T-03 (unitário: `config.ts` lança nomeando cada `VITE_*` ausente/vazia; `requiredUrl` vs `required`; scope e valores expostos) e T-04 (integração: discovery/jwks do fake batem com o contrato). `preview.port` não está fixado (`strictPort` só cobre `vite`); Playwright sobre `vite preview` (4173) vai colidir com `redirect_uri` 5173.
+  - Adiado p/ etapa 8 / §7.3: `VITE_IDP_ACCOUNT_URL` obrigatória força placeholder na Vercel enquanto os caminhos de conta não existem.
+  - Adiado p/ etapa 9 (confirmar no back-end): CORS do `monolito-idp` precisa liberar também discovery e `jwks_uri` (o fake ecoa qualquer `Origin` nesses dois, então dev não detecta); scopes `profile`/`email` são premissa do plano, não contrato confirmado.
+  - Observações sem ação: discovery do fake anuncia `implicit`/`id_token` nos `*_supported` (defaults do provider, sem efeito no client); máquina local roda Node 23 (não-LTS) e `oidc-provider` avisa "Unsupported runtime" — alvo continua Node 22 (`.nvmrc`); `engines >=22.13` × ADR 0001 (22.12) já registrado na TASK-001.
+  - Rejeitado: editar plano §4/§5 (zod) — divergência já reconhecida na ADR 0005 e o plano é histórico; usuário vetou tocá-lo no gate.
+- **Tipo:** decisão
