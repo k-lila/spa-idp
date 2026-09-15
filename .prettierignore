@@ -1,0 +1,8 @@
+dist
+node_modules
+package-lock.json
+
+# Documentos e configuração de agentes: fora do escopo do formatador
+.claude
+CLAUDE.md
+docs/**/*.md
