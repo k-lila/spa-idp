@@ -181,3 +181,19 @@ anteriores não.
 - Gestão de conta dentro da SPA (D2 ficou em "linkar ao IdP").
 - Logout real (adaptação de back-end).
 - Estado global além de sessão; biblioteca de UI além de shadcn/Radix.
+
+---
+
+## §10. Checklist de implementação
+
+Acompanha o §8. Marcar quando o critério "Pronto quando" da etapa for atendido.
+
+- [x] 1. Scaffold: Vite + React + TS `strict` + ESLint + Prettier + Tailwind + React Router
+- [x] 2. IdP fake (§6) + `.env.example` + `src/config.ts`
+- [x] 3. Auth: `userManager`, `AuthProvider`, `/callback`, `RequireAuth`
+- [x] 4. Validação de borda: zod nas claims; `jose` se o §7.1 aprovar
+- [ ] 5. `api/http.ts` + TanStack Query em `userinfo`
+- [ ] 6. Sair, deep-link, estados de erro, `NotFound`
+- [ ] 7. Testes: Vitest (config, claims, guarda); Playwright e2e contra o fake
+- [ ] 8. CI (typecheck/lint/test) + deploy Vercel
+- [ ] 9. Validação contra o `monolito-idp` real
