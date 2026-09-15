@@ -1,8 +1,8 @@
 import { createContext, useContext } from "react";
-import type { User } from "oidc-client-ts";
+import type { Claims } from "./claims";
 
 export type AuthState =
-  { status: "loading" } | { status: "anonymous" } | { status: "authenticated"; user: User };
+  { status: "loading" } | { status: "anonymous" } | { status: "authenticated"; claims: Claims };
 
 export type AuthContextValue = AuthState & { signin: () => Promise<void> };
 

@@ -6,6 +6,14 @@ const PORT = 9000;
 const ISSUER = `http://localhost:${PORT}/o`; // sufixo /o espelha o IdP real
 const SPA_ORIGIN = "http://localhost:5173"; // única fonte p/ redirect_uri e CORS
 const USER = { name: "Usuária de Teste", email: "teste@example.com" };
+// Login que emite `name: ""` (usuário sem nome no IdP real): deve entrar normalmente.
+const USER_SEM_NAME = { name: "", email: USER.email };
+// Logins que emitem claims malformadas (etapa 4): a SPA deve cair no estado de erro do callback.
+const BROKEN_USERS = {
+  "sem-name": { email: USER.email },
+  "sem-email": { name: USER.name },
+  "name-numero": { name: 42, email: USER.email },
+};
 
 // Chave RS256 nova a cada boot (tokens vivem em memória na SPA; nada sobrevive ao restart).
 const { privateKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
@@ -35,12 +43,13 @@ const provider = new Provider(ISSUER, {
     rpInitiatedLogout: { enabled: false }, // IdP real tem logout desligado
   },
   // accountId == login digitado (mesma forma do default do provider, evita checagens cruzadas
-  // grant/sessão/token). name/email fixos; sub = login. Sugerido: fake-user-1.
+  // grant/sessão/token). sub = login; name/email fixos, salvo os logins de BROKEN_USERS, que
+  // emitem claims malformadas de propósito, e name-vazio. Sugerido: fake-user-1.
   async findAccount(_ctx, id) {
     return {
       accountId: id,
       async claims() {
-        return { sub: id, ...USER };
+        return { sub: id, ...(BROKEN_USERS[id] ?? (id === "name-vazio" ? USER_SEM_NAME : USER)) };
       },
     };
   },
@@ -51,4 +60,6 @@ app.use("/o", provider.callback());
 app.listen(PORT, () => {
   console.log(`IdP fake em ${ISSUER}/.well-known/openid-configuration`);
   console.log("login sugerido: fake-user-1 (senha: qualquer)");
+  console.log(`logins com claims malformadas: ${Object.keys(BROKEN_USERS).join(", ")}`);
+  console.log("login que entra com name vazio: name-vazio");
 });

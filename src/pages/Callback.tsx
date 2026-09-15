@@ -12,8 +12,11 @@ export function Callback() {
       () => {
         if (active) navigate("/app", { replace: true }); // /callback não fica no histórico
       },
-      () => {
-        if (active) setFailed(true);
+      (err: unknown) => {
+        if (active) {
+          console.error(err);
+          setFailed(true);
+        }
       },
     );
     return () => {

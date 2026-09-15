@@ -1,5 +1,6 @@
 import { InMemoryWebStorage, UserManager, WebStorageStateStore, type User } from "oidc-client-ts";
 import { config } from "../config";
+import { claimsSchema, type Claims } from "./claims";
 
 // Único ponto de contato com a biblioteca (ADR 0006).
 export const userManager = new UserManager({
@@ -28,13 +29,21 @@ export function signin(): Promise<void> {
   return redirecting;
 }
 
-let callback: Promise<User> | undefined;
+let callback: Promise<Claims> | undefined;
 /**
  * Memoizado por vida do módulo: a 2ª execução do efeito (StrictMode) reaproveita a mesma troca
  * de code. Todo redirect é um carregamento de página novo, então o módulo renasce a cada login.
+ * Valida as claims (I7) e, se rejeitadas, descarta os tokens da tentativa antes de falhar.
  */
-export function completeSignin(): Promise<User> {
-  callback ??= userManager.signinRedirectCallback();
+export function completeSignin(): Promise<Claims> {
+  callback ??= userManager.signinRedirectCallback().then(async (user) => {
+    const parsed = claimsSchema.safeParse(user.profile);
+    if (!parsed.success) {
+      await userManager.removeUser(); // I3: nada da tentativa fica no userStore
+      throw parsed.error;
+    }
+    return parsed.data;
+  });
   return callback;
 }
 

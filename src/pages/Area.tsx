@@ -4,7 +4,7 @@ export function Area() {
   const auth = useAuth();
   if (auth.status !== "authenticated") return null;
 
-  const { sub, name, email } = auth.user.profile;
+  const { sub, name, email } = auth.claims;
   return (
     <main className="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center gap-4 p-8 text-center">
       <h1 className="text-3xl font-semibold">Área autenticada</h1>
