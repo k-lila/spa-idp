@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { Navigate } from "react-router";
 import { useAuth } from "../auth/AuthContext";
 
 export function Landing() {
   const auth = useAuth();
+  const [failed, setFailed] = useState(false);
   if (auth.status === "authenticated") return <Navigate to="/app" replace />;
 
   return (
@@ -11,11 +13,23 @@ export function Landing() {
       <p className="text-neutral-600">Relying Party OIDC do monolito-idp.</p>
       <button
         type="button"
-        onClick={() => void auth.signin()}
+        onClick={() => {
+          setFailed(false);
+          // signin() só rejeita se o redirect não chegou a sair (discovery fora, IdP derrubado).
+          void auth.signin().catch((err: unknown) => {
+            console.error(err);
+            setFailed(true);
+          });
+        }}
         className="rounded bg-neutral-900 px-4 py-2 text-white"
       >
         Entrar
       </button>
+      {failed && (
+        <p role="alert" className="text-red-700">
+          Não foi possível iniciar o login.
+        </p>
+      )}
     </main>
   );
 }

@@ -1,9 +1,11 @@
+import { useNavigate } from "react-router";
 import { useUserinfo } from "../api/userinfo";
 import { useAuth } from "../auth/AuthContext";
 import type { Claims } from "../auth/claims";
 
 export function Area() {
   const auth = useAuth();
+  const navigate = useNavigate();
   if (auth.status !== "authenticated") return null;
 
   return (
@@ -16,6 +18,20 @@ export function Area() {
       <section className="flex flex-col items-center gap-2">
         <h2 className="text-xl font-medium">userinfo</h2>
         <UserinfoSection sub={auth.claims.sub} />
+      </section>
+      <section className="flex flex-col items-center gap-2">
+        <button
+          type="button"
+          // Navegar só depois de a sessão morrer: com ela viva, Landing devolveria a /app (ADR 0010).
+          onClick={() => void auth.signout().then(() => navigate("/"))}
+          className="rounded border border-neutral-900 px-4 py-2"
+        >
+          Sair
+        </button>
+        <p className="text-sm text-neutral-600">
+          Sair só esquece a sessão nesta aplicação. A sessão no provedor de identidade continua
+          ativa: um novo Entrar pode acontecer sem pedir senha.
+        </p>
       </section>
     </main>
   );

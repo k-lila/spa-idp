@@ -193,7 +193,7 @@ Acompanha o §8. Marcar quando o critério "Pronto quando" da etapa for atendido
 - [x] 3. Auth: `userManager`, `AuthProvider`, `/callback`, `RequireAuth`
 - [x] 4. Validação de borda: zod nas claims; `jose` se o §7.1 aprovar
 - [x] 5. `api/http.ts` + TanStack Query em `userinfo`
-- [ ] 6. Sair, deep-link, estados de erro, `NotFound`
+- [x] 6. Sair, deep-link, estados de erro, `NotFound`
 - [ ] 7. Testes: Vitest (config, claims, guarda); Playwright e2e contra o fake
 - [ ] 8. CI (typecheck/lint/test) + deploy Vercel
 - [ ] 9. Validação contra o `monolito-idp` real

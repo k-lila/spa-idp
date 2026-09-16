@@ -9,8 +9,8 @@ export function Callback() {
   useEffect(() => {
     let active = true;
     completeSignin().then(
-      () => {
-        if (active) navigate("/app", { replace: true }); // /callback não fica no histórico
+      ({ returnTo }) => {
+        if (active) navigate(returnTo, { replace: true }); // /callback não fica no histórico
       },
       (err: unknown) => {
         if (active) {

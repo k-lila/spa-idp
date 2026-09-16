@@ -4,7 +4,10 @@ import type { Claims } from "./claims";
 export type AuthState =
   { status: "loading" } | { status: "anonymous" } | { status: "authenticated"; claims: Claims };
 
-export type AuthContextValue = AuthState & { signin: () => Promise<void> };
+export type AuthContextValue = AuthState & {
+  signin: (returnTo?: string) => Promise<void>;
+  signout: () => Promise<void>;
+};
 
 // Separado de AuthProvider.tsx para o arquivo do componente só exportar componente (react-refresh).
 export const AuthContext = createContext<AuthContextValue | null>(null);
