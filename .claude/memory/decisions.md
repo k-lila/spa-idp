@@ -34,6 +34,7 @@
 | 2026-09-16 | Consumir o `userinfo` com TanStack Query v5, chaveado pelo `sub` do `id_token` e validado pelo schema de claims | docs/adr/0009-consumir-o-userinfo-com-tanstack-query-chaveado-pelo-sub-e-validado-pelo-schema-de-claims.md |
 | 2026-09-16 | Sair localmente com `removeUser()` e disparar a guarda de rota só na entrada sem sessão, nunca na perda de sessão com a guarda montada | docs/adr/0010-sair-localmente-com-removeuser-e-disparar-a-guarda-so-na-entrada-sem-sessao.md |
 | 2026-09-16 | Levar o destino do deep-link no `state` do `signinRedirect` e aceitar no callback só caminho da própria origem, resolvido por `URL` | docs/adr/0011-levar-o-destino-do-deep-link-no-state-do-signinredirect-e-aceitar-so-caminho-da-propria-origem.md |
+| 2026-09-16 | Retirar as páginas de conta do escopo da SPA e remover `VITE_IDP_ACCOUNT_URL` (emenda a D2) | docs/adr/0012-retirar-as-paginas-de-conta-do-escopo-e-remover-vite-idp-account-url.md |
 
 ---
 
@@ -143,3 +144,16 @@ memória — é sedimento.
   - Observações sem ação: `.env.local` presente no working tree (T-01 e T-09 são imunes); `oidc-provider` avisa "Unsupported runtime" no Node 23.6 (pré-existente, TASK-002); `[console.error] ZodError` no log do vite durante t05 é o `console.error` esperado de `Callback.tsx`.
   - Incidente: processos `vite`/`idp-fake` de 14 h ocupando 5173/9000 (mesma situação da TASK-004) encerrados com autorização antes da Fase 2; a rodada de polimento reaproveitou dois servidores deixados vivos por execução anterior do pipeline — encerrados pelo orquestrador e suíte reexecutada com `CI=1` e portas livres. Regra prática: rodar a 2ª passagem sempre com `CI=1` para o `webServer` não reaproveitar nada.
 - **Tipo:** decisão
+
+## [2026-09-16] TASK-008 · Emenda a D2: sem páginas de conta, `VITE_IDP_ACCOUNT_URL` removida (passo 1 de `implementacao-contrato.md`)
+- **Decisão:** rota `/refactor` (comportamento idêntico; ADR a registrar descartou `/chore`). Removida — não tornada opcional — de `src/config.ts`, `src/vite-env.d.ts`, `.env.example` (ganhou comentário de como apontar ao IdP real, `:8000/o`), `playwright.config.ts` e dos `fakeConfig`/listas de `config.test.ts`, `userManager.test.ts`, `userManager.lib.test.ts`. Plano: tabela do topo, §2 (rota `/` e itens 1 e 3 sem "Registrar-se"/"Editar perfil" + nota de emenda), §3, §4, §7.3 fechado (número mantido), §9; §7.1 reescrito só para corrigir a afirmação falsa sobre a lib (`oidc-client-ts` 3.5.0 valida só `sub` e `nonce`) — continua aberto; §7.2 intocado (passo 3). `CLAUDE.md`: D2 emendada e "Decisões em aberto" sem §7.3. Efeito no `nova_api`: nenhum além da ADR cruzada pendente lá ("sem páginas de conta nesta fase"), que pode citar a 0012 por número. Verificado: grep de `VITE_IDP_ACCOUNT_URL|idpAccountUrl` vazio em `src/`, `.env.example`, `playwright.config.ts`; `typecheck`/`lint`/`prettier` verdes; Vitest 75/75 em 12 arquivos (era 78 — os 3 casos da variável em `config.test.ts`, 14 → 11); `CI=1 npm run test:e2e` 5/5. Gate do `/refactor` atendido: testes mudaram só pela remoção. `senso-critico` não invocado (nenhuma fronteira entre componentes movida).
+- **ADR:** 0012 (índice acima), aceita como veio do architect.
+- **Tech-debt / melhorias:**
+  - Fechados por esta tarefa: TASK-002 "Adiado p/ etapa 8 / §7.3" (placeholder na Vercel) e TASK-006 "Adiado p/ §7.3 (PM)" (links sem etapa, variável sem uso) — ADR 0012.
+  - Aceito como está (architect, QA): `docs/spa-nucleo.md` §5/§6, parágrafo "Ainda não há código" do `CLAUDE.md` e ADRs 0004/0005 ficam com texto defasado — núcleo/ADRs são históricos e imutáveis; a ADR 0012 registra a defasagem nas Negativas.
+  - Aceito (QA): §7.1 do plano reescrito além da emenda a D2 — estava na estrutura alvo autorizada na Fase 2; corrige fato falso sem decidir nada (decisão é do passo 2).
+  - Adiado p/ passo 3 (architect, QA): item da checklist §9 do `contrato-frontend.md` sobre o plano (§7.2 "marcado como decidido") fica aberto; ao fechar §7.2, trocar também a referência órfã "mapa do back-end" em §7.2 (l.153) — arquivo apagado na tarefa anterior.
+  - Aceito e aplicado com autorização posterior do usuário (writer, QA): `docs/contrato-frontend.md` §8 l.280 "opcional" → "removida (ADR 0012)"; checklist §9 marcados "`VITE_IDP_ACCOUNT_URL` removida…" e "ADR: emenda a D2…" (23 → 21 itens abertos).
+  - Rejeitado (QA): corrigir "validadas com zod" no plano §4 — mesma disposição da TASK-002 (plano é histórico; ADR 0005 já assume a divergência).
+- **Tipo:** decisão
+

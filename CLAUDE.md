@@ -25,14 +25,15 @@ um IdP fake local.
 ### Decisões já fixadas
 
 - **D1:** camada OIDC com `oidc-client-ts`, não PKCE à mão.
-- **D2:** gestão de conta (cadastro, edição) linkada às páginas server-side do IdP.
+- **D2 (emendada pela ADR 0012):** sem gestão de conta nesta fase — nem na SPA, nem por link
+  ao IdP, que não tem páginas de cadastro ou edição de perfil. Contas são criadas pelo admin
+  do IdP.
 - **Dev sem back-end:** IdP fake local em `dev/idp-fake/` (`oidc-provider`).
 
 ### Decisões em aberto (não resolver unilateralmente)
 
-Listadas em `docs/plano-pre-implementacao.md`, §7: assinatura do `id_token` com
-`oidc-client-ts` versus invariante I4; mecanismo de sessão no reload; caminhos das páginas
-de conta no IdP.
+Listadas em `docs/plano-pre-implementacao.md`, §7: verificação do `id_token` (assinatura,
+`iss`, `aud`, `exp`) versus invariante I4; mecanismo de sessão no reload.
 
 ## Regras de trabalho
 

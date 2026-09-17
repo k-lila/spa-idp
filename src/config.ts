@@ -22,7 +22,6 @@ export const config = {
     redirectUri: requiredUrl("VITE_OIDC_REDIRECT_URI", import.meta.env.VITE_OIDC_REDIRECT_URI),
     scope: "openid profile email", // contrato (plano §3), não varia por ambiente
   },
-  idpAccountUrl: requiredUrl("VITE_IDP_ACCOUNT_URL", import.meta.env.VITE_IDP_ACCOUNT_URL),
 } as const;
 
 export type AppConfig = typeof config;

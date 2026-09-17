@@ -3,28 +3,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // config.ts é o primeiro módulo que roda no boot (main.tsx importa por efeito colateral) e só
 // quebra em runtime se faltar/for inválida uma VITE_*. Ambiente node: não toca DOM.
 
-const ENV_VARS = [
-  "VITE_OIDC_ISSUER",
-  "VITE_OIDC_CLIENT_ID",
-  "VITE_OIDC_REDIRECT_URI",
-  "VITE_IDP_ACCOUNT_URL",
-] as const;
+const ENV_VARS = ["VITE_OIDC_ISSUER", "VITE_OIDC_CLIENT_ID", "VITE_OIDC_REDIRECT_URI"] as const;
 type EnvVar = (typeof ENV_VARS)[number];
 
-const URL_VARS: readonly EnvVar[] = [
-  "VITE_OIDC_ISSUER",
-  "VITE_OIDC_REDIRECT_URI",
-  "VITE_IDP_ACCOUNT_URL",
-];
+const URL_VARS: readonly EnvVar[] = ["VITE_OIDC_ISSUER", "VITE_OIDC_REDIRECT_URI"];
 
 const VALID: Record<EnvVar, string> = {
   VITE_OIDC_ISSUER: "https://issuer.example/o",
   VITE_OIDC_CLIENT_ID: "spa-test",
   VITE_OIDC_REDIRECT_URI: "https://app.example/callback",
-  VITE_IDP_ACCOUNT_URL: "https://issuer.example/accounts",
 };
 
-// Estuba as 4 variáveis com valores válidos; nunca depende de .env.local (há um no working
+// Estuba as 3 variáveis com valores válidos; nunca depende de .env.local (há um no working
 // tree). overrides substitui pontualmente a(s) variável(is) sob teste.
 function stubAll(overrides: Partial<Record<EnvVar, string | undefined>> = {}): void {
   for (const name of ENV_VARS) {
@@ -38,7 +28,7 @@ beforeEach(() => {
 });
 
 describe("config", () => {
-  it("(a) as 4 variáveis válidas ecoam em config; scope é o contrato fixo", async () => {
+  it("(a) as 3 variáveis válidas ecoam em config; scope é o contrato fixo", async () => {
     stubAll();
 
     const { config } = await import("./config");
@@ -46,7 +36,6 @@ describe("config", () => {
     expect(config.oidc.issuer).toBe(VALID.VITE_OIDC_ISSUER);
     expect(config.oidc.clientId).toBe(VALID.VITE_OIDC_CLIENT_ID);
     expect(config.oidc.redirectUri).toBe(VALID.VITE_OIDC_REDIRECT_URI);
-    expect(config.idpAccountUrl).toBe(VALID.VITE_IDP_ACCOUNT_URL);
     expect(config.oidc.scope).toBe("openid profile email");
   });
 

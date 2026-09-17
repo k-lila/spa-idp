@@ -2,12 +2,11 @@ import { defineConfig, devices } from "@playwright/test";
 
 // Valores literais de .env.example (T-09): process.env.VITE_* vence .env* no Vite
 // (node_modules/vite/dist/node/chunks/node.js:5730), então a suite é imune a um .env.local
-// divergente. Não duplicar em .env.test/.env.e2e — seria um segundo lugar para os mesmos 4.
+// divergente. Não duplicar em .env.test/.env.e2e — seria um segundo lugar para os mesmos 3.
 const SPA_ENV = {
   VITE_OIDC_ISSUER: "http://localhost:9000/o",
   VITE_OIDC_CLIENT_ID: "spa-local",
   VITE_OIDC_REDIRECT_URI: "http://localhost:5173/callback",
-  VITE_IDP_ACCOUNT_URL: "http://localhost:9000/accounts",
 };
 
 export default defineConfig({

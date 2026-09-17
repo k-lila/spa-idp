@@ -277,7 +277,7 @@ Em produção, com a SPA publicada e o IdP na AWS: o item 1 fecha em `https://<s
 | --- | --- |
 | Verificação do `id_token` com `jose` (I4 cumprido; emenda ao plano §7.1) | `integracao-rp.md` §7 (o que a RP verifica) |
 | Sessão no reload por redirect + SSO (fecha §7.2) | ADR do IdP sobre `skip_authorization` |
-| Emenda a D2: sem páginas de conta; `VITE_IDP_ACCOUNT_URL` opcional | ADR do IdP "sem páginas de conta nesta fase" |
+| Emenda a D2: sem páginas de conta; `VITE_IDP_ACCOUNT_URL` removida (ADR 0012) | ADR do IdP "sem páginas de conta nesta fase" |
 | `VITE_OIDC_ISSUER` de produção fixado em `https://<dominio-do-idp>/o` | ADR do IdP congelando o issuer (ADR 0007) |
 | Deploy na Vercel: `vercel.json`, variáveis por ambiente, previews sem IdP de produção | ADR do IdP sobre CORS por origem exata |
 
@@ -295,7 +295,7 @@ documento.
       callback; teste unitário cobrindo token adulterado, `iss` errado, `aud` errado, expirado
 - [ ] `vercel.json` com rewrite universal, `Referrer-Policy: no-referrer` e
       `X-Content-Type-Options: nosniff`
-- [ ] `VITE_IDP_ACCOUNT_URL` opcional ou removida; `.env.example` e `config.test.ts` ajustados
+- [x] `VITE_IDP_ACCOUNT_URL` removida (ADR 0012); `.env.example` e `config.test.ts` ajustados
 - [ ] `Landing` distingue `loading` de `anonymous`
 - [ ] `requestTimeoutInSeconds` configurado no `UserManager`
 - [ ] UX de `name` vazio decidida na `Area`
@@ -326,6 +326,6 @@ documento.
 
 - [ ] ADR: verificação do `id_token` com `jose` (I4), com referência ao `integracao-rp.md`
 - [ ] ADR: sessão no reload por redirect + SSO (§7.2), com referência à ADR do IdP
-- [ ] ADR: emenda a D2 (sem páginas de conta), com referência à ADR do IdP
+- [x] ADR: emenda a D2 (sem páginas de conta), com referência à ADR do IdP
 - [ ] ADR: issuer de produção fixado, com referência à ADR do IdP
 - [ ] ADR: deploy na Vercel e política de previews, com referência à ADR de CORS do IdP

@@ -10,7 +10,6 @@ const fakeConfig = {
     redirectUri: "http://app.test/callback",
     scope: "openid profile email",
   },
-  idpAccountUrl: "http://idp.test/accounts",
 };
 
 function mockOidcClientTs(

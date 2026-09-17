@@ -4,8 +4,8 @@
 |---|---|
 | Status | proposto — 2026-09-14 |
 | Depende de | `spa-nucleo.md`, `contrato-frontend.md` |
-| Decisões fixadas aqui | D1 = `oidc-client-ts`; D2 = gestão de conta linkada ao IdP; dev contra IdP fake local |
-| Decisões ainda abertas | mecanismo de sobrevivência ao reload (§7); assinatura do `id_token` com `oidc-client-ts` (§7) |
+| Decisões fixadas aqui | D1 = `oidc-client-ts`; D2 = gestão de conta linkada ao IdP — **emendada pela ADR 0012: sem páginas de conta nesta fase**; dev contra IdP fake local|
+| Decisões ainda abertas | mecanismo de sobrevivência ao reload (§7.2); verificação do `id_token` — assinatura, `iss`, `aud`, `exp` (§7.1) |
 
 Este documento fecha o que a conversa de UX decidiu e ordena a implementação da
 aplicação de página única (SPA) que atua como Relying Party do provedor de identidade
@@ -29,21 +29,20 @@ resto serve a ela.
 
 | Rota | Acesso | Papel |
 |---|---|---|
-| `/` | público | Landing: "Entrar" e "Registrar-se" |
+| `/` | público | Landing: "Entrar" |
 | `/callback` | público | Recebe `code` + `state`; nunca é destino final |
 | `/app` | protegido | Área autenticada: perfil e "Sair" |
 | `*` | público | Não encontrado; volta para `/` |
 
 ### Telas e estados
 
-1. **Landing (`/`).** Dois botões. "Entrar" inicia o redirect a `/o/authorize/`.
-   "Registrar-se" é link externo às páginas server-side do IdP (D2). Se já há sessão em
-   memória, redireciona para `/app`.
+1. **Landing (`/`).** Um botão: "Entrar" inicia o redirect a `/o/authorize/`. Se já há
+   sessão em memória, redireciona para `/app`.
 2. **Callback (`/callback`).** Três estados: *autenticando* (padrão), *erro* (`state`
    inválido, `code` rejeitado, rede/CORS) e *sucesso* (redireciona para o destino guardado
    ou para `/app`). O erro mostra uma mensagem e um botão que volta para `/`.
-3. **Área autenticada (`/app`).** Exibe `sub`, `name` e `email`; links para "Editar perfil"
-   no IdP; botão "Sair". Sem senha, sem formulário.
+3. **Área autenticada (`/app`).** Exibe `sub`, `name` e `email`; botão "Sair". Sem senha,
+   sem formulário.
 4. **Sair.** Esquece os tokens e navega para `/`. Enquanto o `end_session_endpoint` não
    existir, o texto avisa que a sessão no provedor de identidade continua ativa.
 5. **Boot sem token** (reload ou primeira visita). Chama `restoreSession()` — ponto de
@@ -51,6 +50,9 @@ resto serve a ela.
    comportamento é o da rota: `/` mostra a landing, `/app` redireciona ao login.
 6. **Deep-link.** Rota protegida sem sessão guarda o destino no `state` do redirect
    (`signinRedirect({ state: { returnTo } })`) e o callback restaura.
+
+Emenda (ADR 0012): "Registrar-se" e "Editar perfil" saíram — o IdP não tem páginas de
+conta nesta fase.
 
 ---
 
@@ -72,8 +74,6 @@ Pontos de encaixe (a SPA já deixa o lugar, o back-end preenche depois):
 
 - **Sessão no reload** — função `restoreSession()` (§7).
 - **Logout real** — se o discovery anunciar `end_session_endpoint`, "Sair" passa a usá-lo.
-- **URL das páginas de conta** — cadastro e edição de perfil. Não é descoberto por OIDC
-  (OpenID Connect); entra por variável de ambiente até o back-end fixar os caminhos.
 
 ---
 
@@ -84,7 +84,6 @@ Pontos de encaixe (a SPA já deixa o lugar, o back-end preenche depois):
 | `VITE_OIDC_ISSUER` | base do discovery (`{BASE_URL}/o`) |
 | `VITE_OIDC_CLIENT_ID` | `client_id` da `Application` |
 | `VITE_OIDC_REDIRECT_URI` | URL de `/callback` deste deploy |
-| `VITE_IDP_ACCOUNT_URL` | base das páginas server-side de conta |
 
 `.env.example` commitado com valores do IdP fake; `.env.local` ignorado pelo git (I6).
 Lidas uma vez em `src/config.ts` e validadas com zod — falta de variável falha no boot,
@@ -137,21 +136,22 @@ validação contra o `monolito-idp` quando ele tiver endereço — essa é a úl
 
 ## §7. Decisões que aguardam o mantenedor
 
-1. **Assinatura do `id_token`.** `oidc-client-ts` (v2+) valida `iss`, `aud`, `exp` e
-   `nonce`, mas **não verifica a assinatura** via JWKS — confia no canal TLS do token
-   endpoint. O invariante I4 exige a verificação. Opções:
-   - *Acrescentar verificação com `jose`* após o `signinCallback`, usando `jwks_uri` do
-     discovery. Pró: I4 preservado. Contra: código a mais fora da biblioteca.
+1. **Verificação do `id_token`.** `oidc-client-ts` 3.5.0 valida só `sub` e `nonce`; **não**
+   verifica assinatura, `iss`, `aud` nem `exp` (fato verificado na TASK-003; a redação
+   original desta seção afirmava o contrário). O invariante I4 exige tudo isso. Opções:
+   - *Acrescentar verificação com `jose`* após o `signinRedirectCallback`, cobrindo
+     assinatura via `jwks_uri` do discovery **e** `iss`/`aud`/`exp`. Pró: I4 preservado.
+     Contra: código a mais fora da biblioteca. (Recomendação do `contrato-frontend.md` §5.1.)
    - *Relaxar I4 por ADR*, aceitando a justificativa da biblioteca. Pró: menos código.
-     Contra: muda um invariante do núcleo.
+     Contra: muda um invariante do núcleo e deixa `iss`/`aud`/`exp` sem verificação nenhuma.
 2. **Sessão no reload.** `restoreSession()` nasce vazia. Candidatos:
    - *Silent auth via `prompt=none`* (redirect top-level). Só OIDC padrão; um redirect por
      reload.
    - *Renovação via back-end* (cookie HttpOnly + endpoint próprio). Sem redirect; exige
      cookie cross-site, que o mapa do back-end descarta.
    A escolha é do back-end; a SPA implementa o que for decidido dentro da função.
-3. **Caminhos das páginas de conta** no IdP (`/accounts/...`), para preencher
-   `VITE_IDP_ACCOUNT_URL`.
+3. **Caminhos das páginas de conta.** Fechado pela ADR 0012: o IdP não tem páginas de
+   conta nesta fase; `VITE_IDP_ACCOUNT_URL` foi removida.
 
 Cada decisão fechada vira um registro de decisão de arquitetura (ADR) em `docs/adr/`.
 
@@ -178,7 +178,8 @@ anteriores não.
 
 ## §9. Fora deste plano
 
-- Gestão de conta dentro da SPA (D2 ficou em "linkar ao IdP").
+- Gestão de conta — dentro da SPA ou linkada ao IdP (D2 emendada pela ADR 0012: sem
+  páginas de conta nesta fase).
 - Logout real (adaptação de back-end).
 - Estado global além de sessão; biblioteca de UI além de shadcn/Radix.
 
