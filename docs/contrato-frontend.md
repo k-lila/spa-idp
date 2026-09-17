@@ -310,7 +310,7 @@ documento.
       (`redirect_uri`)
 - [ ] `.env.local` apontando para `http://localhost:8000/o` com o `client_id` de dev
 - [ ] Verificação manual da seção 7, itens 1–7, contra o IdP real local
-- [ ] e2e no fake continuam verdes (o fake não foi alterado para fingir o IdP real)
+- [x] e2e no fake continuam verdes (o fake não foi alterado para fingir o IdP real)
 
 ### Produção
 
