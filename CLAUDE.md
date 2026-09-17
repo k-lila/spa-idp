@@ -18,8 +18,7 @@ um IdP fake local.
 | Documento | O que define |
 |---|---|
 | `docs/spa-nucleo.md` | Stack e invariantes I1–I8 (DEVE / NÃO DEVE). Nenhum agente diverge deles. |
-| `docs/frontend-mapa-comportamento.md` | Fluxo de auth do lado da SPA, superfícies, limitações |
-| `docs/backend-mapa-comportamento.md` | Contrato do IdP: endpoints, claims, config, adaptações pendentes |
+| `docs/contrato-frontend.md` | O que a SPA cumpre para integrar o IdP real: contrato, implementação pendente, checklist |
 | `docs/plano-pre-implementacao.md` | Fluxo de UX, rotas, estrutura, ordem de implementação |
 | `docs/adr/` | Decisões formais (template em `template-adr.md`) |
 

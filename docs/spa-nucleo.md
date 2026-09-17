@@ -9,7 +9,7 @@
 | Modelo de confiança | autorização por **token** (redirect + PKCE) |
 | Status | núcleo definido; itens em aberto marcados em §5 |
 | Audiência | time de subagentes de implementação |
-| Documentos irmãos | `backend-mapa-comportamento.md`, `frontend-mapa-comportamento.md` |
+| Documentos irmãos | `contrato-frontend.md`, `plano-pre-implementacao.md` |
 
 ---
 

@@ -3,7 +3,7 @@
 | Campo | Valor |
 |---|---|
 | Status | proposto — 2026-09-14 |
-| Depende de | `spa-nucleo.md`, `frontend-mapa-comportamento.md`, `backend-mapa-comportamento.md` |
+| Depende de | `spa-nucleo.md`, `contrato-frontend.md` |
 | Decisões fixadas aqui | D1 = `oidc-client-ts`; D2 = gestão de conta linkada ao IdP; dev contra IdP fake local |
 | Decisões ainda abertas | mecanismo de sobrevivência ao reload (§7); assinatura do `id_token` com `oidc-client-ts` (§7) |
 
