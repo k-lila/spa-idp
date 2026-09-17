@@ -51,7 +51,7 @@ function ClaimsList({ claims: { sub, name, email } }: { claims: Claims }) {
       <dt className="text-neutral-600">sub</dt>
       <dd>{sub}</dd>
       <dt className="text-neutral-600">name</dt>
-      <dd>{name}</dd>
+      <dd>{name === "" ? <span className="text-neutral-600">(sem nome)</span> : name}</dd>
       <dt className="text-neutral-600">email</dt>
       <dd>{email}</dd>
     </dl>

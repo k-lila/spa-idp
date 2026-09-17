@@ -5,6 +5,8 @@ import { useAuth } from "../auth/AuthContext";
 export function Landing() {
   const auth = useAuth();
   const [failed, setFailed] = useState(false);
+  // Ainda não se sabe se há sessão: nada de "Entrar" antes de restoreSession() responder (ADR 0014).
+  if (auth.status === "loading") return null;
   if (auth.status === "authenticated") return <Navigate to="/app" replace />;
 
   return (

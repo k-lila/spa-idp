@@ -80,4 +80,40 @@ describe("userManager (oidc-client-ts real, sem rede)", () => {
 
     expect(loaded).not.toHaveBeenCalled();
   });
+
+  it("(c) settings do UserManager: timeout finito e tokens fora de sessionStorage/localStorage (I3)", async () => {
+    const { User } = await import("oidc-client-ts");
+    const { userManager } = await import("./userManager");
+
+    // requestTimeoutInSeconds: sem ele a descoberta e /o/token/ nunca rejeitam sozinhos (ADR 0015).
+    expect(userManager.settings.requestTimeoutInSeconds).toBe(15);
+    expect(userManager.settings.response_type).toBe("code");
+    expect(userManager.settings.automaticSilentRenew).toBe(false);
+    expect(userManager.settings.monitorSession).toBe(false);
+    expect(userManager.settings.loadUserInfo).toBe(false);
+    expect(userManager.settings.authority).toBe(fakeConfig.oidc.issuer);
+    expect(userManager.settings.client_id).toBe(fakeConfig.oidc.clientId);
+    expect(userManager.settings.redirect_uri).toBe(fakeConfig.oidc.redirectUri);
+    expect(userManager.settings.scope).toBe(fakeConfig.oidc.scope);
+
+    // Mesmo objeto dos casos (a)/(b): storeUser não passa por rede.
+    await userManager.storeUser(
+      new User({
+        access_token: "tok",
+        token_type: "Bearer",
+        profile: {
+          sub: "u1",
+          name: "Ana",
+          email: "ana@example.com",
+          iss: "http://idp.test/o",
+          aud: "spa-test",
+          exp: 9999999999,
+          iat: 0,
+        },
+      }),
+    );
+
+    expect(Object.keys(sessionStorage).some((key) => key.startsWith("oidc.user:"))).toBe(false);
+    expect(Object.keys(localStorage).some((key) => key.startsWith("oidc.user:"))).toBe(false);
+  });
 });

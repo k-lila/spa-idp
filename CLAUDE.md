@@ -29,10 +29,12 @@ um IdP fake local.
   ao IdP, que não tem páginas de cadastro ou edição de perfil. Contas são criadas pelo admin
   do IdP.
 - **Dev sem back-end:** IdP fake local em `dev/idp-fake/` (`oidc-provider`).
+- **Sessão no reload (ADR 0014):** redirect ao IdP + SSO; tokens só em memória, nada em
+  `sessionStorage`; o `refresh_token` que o IdP devolve é recebido e nunca usado.
 
 ### Decisões em aberto (não resolver unilateralmente)
 
-Listadas em `docs/plano-pre-implementacao.md`, §7: mecanismo de sessão no reload (§7.2).
+Nenhuma: o plano §7 está inteiramente fechado (ADRs 0012, 0013, 0014).
 
 ## Regras de trabalho
 

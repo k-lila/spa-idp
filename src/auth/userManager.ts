@@ -13,9 +13,10 @@ export const userManager = new UserManager({
   userStore: new WebStorageStateStore({ store: new InMemoryWebStorage() }), // I3: tokens só em memória
   // stateStore: default (sessionStorage) — guarda state/nonce/code_verifier SÓ durante o redirect
   // (a página é descarregada; memória não sobreviveria). Não é token; plano §5 permite.
-  automaticSilentRenew: false, // default da v3 é true e usaria o refresh_token → decide §7.2
+  automaticSilentRenew: false, // default da v3 é true e usaria o refresh_token (ADR 0014)
   monitorSession: false, // check-session iframe: inexistente no fake, cross-site em prod
   loadUserInfo: false, // userinfo é etapa 5
+  requestTimeoutInSeconds: 15, // descoberta e /o/token/ rejeitam em tempo finito (contrato §7 item 7; ADR 0015)
 });
 
 let redirecting: Promise<void> | undefined;
@@ -85,7 +86,10 @@ export function signout(): Promise<void> {
   return userManager.removeUser();
 }
 
-/** Ponto de encaixe do plano §7.2. Hoje só consulta o store em memória: após reload responde null. */
+/**
+ * Sessão no reload é por redirect + SSO (ADR 0014): só consulta o store em memória; após reload
+ * responde null e a guarda vai ao IdP.
+ */
 export function restoreSession(): Promise<User | null> {
   return userManager.getUser();
 }

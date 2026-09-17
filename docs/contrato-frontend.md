@@ -206,8 +206,10 @@ Junto, dois ajustes apontados em `decisions.md` que ficam visíveis contra o IdP
 
 - Consentimento (seção 2.2): nenhuma suposição de volta silenciosa; o fluxo já é um redirect
   top-level e funciona com ou sem a tela.
-- 429 do limitador: hoje cai no erro genérico do callback ou do userinfo. Aceitável; não
-  retentar automaticamente (a retentativa alimentaria o próprio limite).
+- 429 do limitador: em `/o/token/` (e no `userinfo`, se limitado) cai no erro genérico do callback
+  ou da `Area`; em `/o/authorize/` é navegação top-level — o JSON do limitador aparece na origem
+  do IdP, fora da SPA, e recuperar é voltar ou esperar 60 s. Não retentar automaticamente (a
+  retentativa alimentaria o próprio limite).
 - `name` vazio: decidir a UX da `Area` (em branco, ou texto como "sem nome"), sem mexer no
   schema.
 
@@ -296,10 +298,10 @@ documento.
 - [ ] `vercel.json` com rewrite universal, `Referrer-Policy: no-referrer` e
       `X-Content-Type-Options: nosniff`
 - [x] `VITE_IDP_ACCOUNT_URL` removida (ADR 0012); `.env.example` e `config.test.ts` ajustados
-- [ ] `Landing` distingue `loading` de `anonymous`
-- [ ] `requestTimeoutInSeconds` configurado no `UserManager`
-- [ ] UX de `name` vazio decidida na `Area`
-- [ ] Plano §7.1 emendado (a lib não valida `iss`/`aud`/`exp`); §2 sem "Registrar-se" e
+- [x] `Landing` distingue `loading` de `anonymous`
+- [x] `requestTimeoutInSeconds` configurado no `UserManager`
+- [x] UX de `name` vazio decidida na `Area`
+- [x] Plano §7.1 emendado (a lib não valida `iss`/`aud`/`exp`); §2 sem "Registrar-se" e
       "Editar perfil"; §7.2 e §7.3 marcados como decididos
 
 ### Desenvolvimento
@@ -325,7 +327,7 @@ documento.
 ### Registro
 
 - [x] ADR: verificação do `id_token` com `jose` (I4), com referência ao `integracao-rp.md`
-- [ ] ADR: sessão no reload por redirect + SSO (§7.2), com referência à ADR do IdP
+- [x] ADR: sessão no reload por redirect + SSO (§7.2), com referência à ADR do IdP
 - [x] ADR: emenda a D2 (sem páginas de conta), com referência à ADR do IdP
 - [ ] ADR: issuer de produção fixado, com referência à ADR do IdP
 - [ ] ADR: deploy na Vercel e política de previews, com referência à ADR de CORS do IdP

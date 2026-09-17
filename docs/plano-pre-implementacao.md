@@ -4,8 +4,7 @@
 |---|---|
 | Status | proposto — 2026-09-14 |
 | Depende de | `spa-nucleo.md`, `contrato-frontend.md` |
-| Decisões fixadas aqui | D1 = `oidc-client-ts`; D2 = gestão de conta linkada ao IdP — **emendada pela ADR 0012: sem páginas de conta nesta fase**; dev contra IdP fake local; verificação do `id_token` com `jose` — **ADR 0013** |
-| Decisões ainda abertas | mecanismo de sobrevivência ao reload (§7.2) |
+| Decisões fixadas aqui | D1 = `oidc-client-ts`; D2 = gestão de conta linkada ao IdP — **emendada pela ADR 0012: sem páginas de conta nesta fase**; dev contra IdP fake local; verificação do `id_token` com `jose` — **ADR 0013**; sessão no reload por redirect + SSO — **ADR 0014** |
 
 Este documento fecha o que a conversa de UX decidiu e ordena a implementação da
 aplicação de página única (SPA) que atua como Relying Party do provedor de identidade
@@ -140,12 +139,15 @@ validação contra o `monolito-idp` quando ele tiver endereço — essa é a úl
    `sub` e `nonce`; a SPA verifica com `jose`, em `completeSignin()` e antes das claims, a
    assinatura (JWKS do `jwks_uri` da descoberta, RS256), `iss` por igualdade exata com
    `VITE_OIDC_ISSUER`, `aud` = `client_id` e `exp` com tolerância. I4 cumprido.
-2. **Sessão no reload.** `restoreSession()` nasce vazia. Candidatos:
-   - *Silent auth via `prompt=none`* (redirect top-level). Só OIDC padrão; um redirect por
-     reload.
-   - *Renovação via back-end* (cookie HttpOnly + endpoint próprio). Sem redirect; exige
-     cookie cross-site, que o mapa do back-end descarta.
-   A escolha é do back-end; a SPA implementa o que for decidido dentro da função.
+2. **Sessão no reload.** Fechado pela ADR 0014: redirect ao IdP + SSO. `restoreSession()`
+   consulta só a memória e após reload responde "sem sessão"; a rota protegida vai a
+   `/o/authorize/` e o cookie de sessão do IdP (`SameSite=Lax`, navegação top-level) devolve
+   sem senha. Reload sem tela de consentimento depende de `skip_authorization` na
+   `Application` da SPA (`nova_api/docs/contrato-backend.md` §5.3). Nada de token fora da
+   memória: `sessionStorage` + `refresh_token` foi descartado porque o `refresh_token` do IdP
+   não expira. Candidatos descartados: silent auth `prompt=none` (mesmo custo, e em iframe
+   depende de cookie cross-site que o fake same-site mascara) e renovação via back-end com
+   cookie (o `contrato-backend.md` não prevê cookie cross-site nem endpoint próprio).
 3. **Caminhos das páginas de conta.** Fechado pela ADR 0012: o IdP não tem páginas de
    conta nesta fase; `VITE_IDP_ACCOUNT_URL` foi removida.
 

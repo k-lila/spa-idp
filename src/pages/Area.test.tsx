@@ -106,8 +106,15 @@ describe("Area", () => {
     expect(screen.queryByText("Carregando…")).toBeNull();
     expect(screen.queryByText(/extra/)).toBeNull();
 
+    // AC-11: name vazio no userinfo mostra o placeholder...
     const ddName = within(userinfoSection).getByText("name").nextElementSibling;
-    expect(ddName?.textContent).toBe("");
+    expect(ddName?.textContent).toBe("(sem nome)");
+
+    // ...e o id_token (name "Ana", do beforeEach) não é afetado pelo userinfo.
+    const idTokenSection = sectionOf("id_token");
+    const idDdName = within(idTokenSection).getByText("name").nextElementSibling;
+    expect(idDdName?.textContent).toBe("Ana");
+    expect(within(idTokenSection).queryByText("(sem nome)")).toBeNull();
   });
 
   it("c) userinfo com sub divergente mostra erro, preserva id_token e não dispara signin", async () => {
@@ -154,5 +161,37 @@ describe("Area", () => {
     screen.getByText(
       "Sair só esquece a sessão nesta aplicação. A sessão no provedor de identidade continua ativa: um novo Entrar pode acontecer sem pedir senha.",
     );
+  });
+
+  it("f) claims com name vazio mostra o placeholder no id_token mesmo com userinfo pendente (AC-10)", () => {
+    useAuth.mockReturnValue({
+      status: "authenticated",
+      claims: { sub: "u1", name: "", email: "a@x" },
+      signin,
+      signout,
+    });
+    authGet.mockReturnValue(new Promise<Response>(() => {}));
+
+    renderArea();
+
+    const idTokenSection = sectionOf("id_token");
+    const ddName = within(idTokenSection).getByText("name").nextElementSibling;
+    expect(ddName?.textContent).toBe("(sem nome)");
+    within(idTokenSection).getByText("u1");
+    within(idTokenSection).getByText("a@x");
+  });
+
+  it("g) userinfo resolvido sem name vazio não mostra placeholder em nenhuma seção (AC-12)", async () => {
+    authGet.mockResolvedValue(fakeResponse({ sub: "u1", name: "Ana", email: "a@x" }));
+
+    renderArea();
+
+    const userinfoSection = sectionOf("userinfo");
+    await within(userinfoSection).findByText("u1");
+
+    const idTokenSection = sectionOf("id_token");
+    within(idTokenSection).getByText("Ana");
+    within(userinfoSection).getByText("Ana");
+    expect(screen.queryByText("(sem nome)")).toBeNull();
   });
 });
