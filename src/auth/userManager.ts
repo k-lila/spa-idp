@@ -1,6 +1,7 @@
 import { InMemoryWebStorage, UserManager, WebStorageStateStore, type User } from "oidc-client-ts";
 import { config } from "../config";
 import { claimsSchema, type Claims } from "./claims";
+import { remoteJwks, verifyIdToken } from "./idToken";
 
 // Único ponto de contato com a biblioteca (ADR 0006).
 export const userManager = new UserManager({
@@ -40,16 +41,23 @@ let callback: Promise<{ claims: Claims; returnTo: string }> | undefined;
 /**
  * Memoizado por vida do módulo: a 2ª execução do efeito (StrictMode) reaproveita a mesma troca
  * de code. Todo redirect é um carregamento de página novo, então o módulo renasce a cada login.
- * Valida as claims (I7) e, se rejeitadas, descarta os tokens da tentativa antes de falhar.
+ * Verifica o `id_token` (I4) e valida as claims (I7); em qualquer falha descarta os tokens da
+ * tentativa antes de rejeitar (ADRs 0007, 0013).
  */
 export function completeSignin(): Promise<{ claims: Claims; returnTo: string }> {
+  // A lib grava o User e emite `userLoaded` antes de resolver: o contexto fica `authenticated`
+  // até a verificação terminar. Inofensivo porque em /callback só Callback está montada e
+  // `removeUser()` emite `userUnloaded` (ADR 0007; a janela cresce com a rede, ADR 0013).
   callback ??= userManager.signinRedirectCallback().then(async (user) => {
-    const parsed = claimsSchema.safeParse(user.profile);
-    if (!parsed.success) {
+    try {
+      const jwksUri = await userManager.metadataService.getKeysEndpoint(false); // I5: da descoberta
+      // `?? ""` só satisfaz o tipo: a lib já rejeita resposta openid sem id_token antes de resolver.
+      await verifyIdToken(user.id_token ?? "", remoteJwks(jwksUri));
+      return { claims: claimsSchema.parse(user.profile), returnTo: internalPath(user.state) };
+    } catch (error) {
       await userManager.removeUser(); // I3: nada da tentativa fica no userStore
-      throw parsed.error;
+      throw error;
     }
-    return { claims: parsed.data, returnTo: internalPath(user.state) };
   });
   return callback;
 }

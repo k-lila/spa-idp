@@ -15,6 +15,15 @@ async function readClaims(section: Locator): Promise<{ sub: string; name: string
 test("login completo com fake-user-1 chega a /app com id_token e userinfo iguais", async ({
   page,
 }) => {
+  // Prova, por evento de rede/navegação (não por leitura de código), que o /o/jwks da descoberta
+  // é buscado antes da navegação a /app — ou seja, que a verificação do id_token (ADR 0013) roda
+  // de fato no caminho feliz, e não depois que a SPA já decidiu que a sessão é válida.
+  const events: string[] = [];
+  page.on("request", (req) => events.push(`req:${new URL(req.url()).pathname}`));
+  page.on("framenavigated", (frame) => {
+    if (frame === page.mainFrame()) events.push(`nav:${new URL(frame.url()).pathname}`);
+  });
+
   await page.goto("/");
   await page.getByRole("button", { name: "Entrar" }).click();
 
@@ -43,4 +52,10 @@ test("login completo com fake-user-1 chega a /app com id_token e userinfo iguais
   }));
   expect(storage.localLength).toBe(0);
   expect(storage.sessionKeys.some((key) => key.startsWith("oidc."))).toBe(false);
+
+  // T-10 (AC-01): /o/jwks é a rota default do oidc-provider sob /o (prática do /o/me em T-05).
+  const jwksIndex = events.indexOf("req:/o/jwks");
+  const appNavIndex = events.indexOf("nav:/app");
+  expect(jwksIndex).toBeGreaterThanOrEqual(0);
+  expect(jwksIndex).toBeLessThan(appNavIndex);
 });

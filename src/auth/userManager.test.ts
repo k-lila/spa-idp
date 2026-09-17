@@ -12,9 +12,12 @@ const fakeConfig = {
   },
 };
 
+// getKeysEndpoint tem default próprio (não depende de rede) mas é aceito por parâmetro para os
+// casos que precisam inspecionar a chamada (T-08: com que argumento, que URI ela devolve).
 function mockOidcClientTs(
   signinRedirectCallback: ReturnType<typeof vi.fn>,
   removeUser: ReturnType<typeof vi.fn>,
+  getKeysEndpoint: ReturnType<typeof vi.fn> = vi.fn().mockResolvedValue("http://idp.test/o/jwks"),
 ) {
   vi.doMock("oidc-client-ts", async (importOriginal) => {
     const actual = await importOriginal<typeof import("oidc-client-ts")>();
@@ -29,15 +32,23 @@ function mockOidcClientTs(
           signinRedirect: vi.fn(),
           getUser: vi.fn(),
           events: { addUserLoaded: vi.fn(() => vi.fn()) },
+          metadataService: { getKeysEndpoint },
         };
       }),
     };
   });
+  return { getKeysEndpoint };
 }
 
 beforeEach(() => {
   vi.resetModules();
   vi.doMock("../config", () => ({ config: fakeConfig }));
+  // completeSignin() verifica o id_token (ADR 0013); por padrão a verificação passa e não
+  // reformula os casos que não são sobre ela — T-09 sobrescreve com um rejeitado.
+  vi.doMock("./idToken", () => ({
+    verifyIdToken: vi.fn().mockResolvedValue(undefined),
+    remoteJwks: vi.fn(),
+  }));
 });
 
 describe("completeSignin", () => {
@@ -69,20 +80,27 @@ describe("completeSignin", () => {
     expect(removeUser).toHaveBeenCalledTimes(1);
   });
 
-  it("(b) profile válido, state ausente: resolve {claims,returnTo:'/app'} e não chama removeUser", async () => {
+  it("(b) profile válido, state ausente: resolve {claims,returnTo:'/app'}, não chama removeUser, e o id_token passa pela verificação via jwks da descoberta (I5)", async () => {
     const signinRedirectCallback = vi.fn().mockResolvedValue({
+      id_token: "x.y.z",
       profile: { sub: "u1", name: "Ana", email: "ana@example.com", iat: 123 },
     });
     const removeUser = vi.fn();
-    mockOidcClientTs(signinRedirectCallback, removeUser);
+    const { getKeysEndpoint } = mockOidcClientTs(signinRedirectCallback, removeUser);
 
     const { completeSignin } = await import("./userManager");
+    const { verifyIdToken, remoteJwks } = await import("./idToken");
 
     await expect(completeSignin()).resolves.toEqual({
       claims: { sub: "u1", name: "Ana", email: "ana@example.com" },
       returnTo: "/app",
     });
     expect(removeUser).not.toHaveBeenCalled();
+
+    expect(verifyIdToken).toHaveBeenCalledTimes(1);
+    expect((verifyIdToken as ReturnType<typeof vi.fn>).mock.calls[0]?.[0]).toBe("x.y.z");
+    expect(getKeysEndpoint).toHaveBeenCalledWith(false); // I5: descoberta, não configuração estática
+    expect(remoteJwks).toHaveBeenCalledWith("http://idp.test/o/jwks");
   });
 
   it("(c) signinRedirectCallback rejeita: completeSignin propaga o mesmo erro e não chama removeUser", async () => {
@@ -95,6 +113,40 @@ describe("completeSignin", () => {
 
     await expect(completeSignin()).rejects.toBe(originalError);
     expect(removeUser).not.toHaveBeenCalled();
+  });
+
+  it("(c2) id_token inválido (verifyIdToken rejeita): completeSignin propaga o MESMO erro — não ZodError —, e removeUser resolve antes da rejeição (T-09)", async () => {
+    const order: string[] = [];
+    const err = new TypeError("Failed to fetch");
+    vi.doMock("./idToken", () => ({
+      verifyIdToken: vi.fn().mockRejectedValue(err),
+      remoteJwks: vi.fn(),
+    })); // sobrescreve o mock do beforeEach só para este caso
+
+    const signinRedirectCallback = vi.fn().mockResolvedValue({
+      id_token: "x.y.z",
+      profile: { sub: "u1" }, // inválido para o zod de propósito: se a rejeição fosse dele, seria ZodError
+    });
+    // Mesmo padrão do caso (a): removeUser deferido por macrotask denuncia um `removeUser()`
+    // sem `await` em produção (o throw venceria a corrida e a asserção de ordem abaixo falharia).
+    const removeUser = vi.fn().mockImplementation(() => {
+      order.push("removeUser-start");
+      return new Promise<void>((resolve) => {
+        setTimeout(() => {
+          order.push("removeUser-end");
+          resolve();
+        }, 0);
+      });
+    });
+    mockOidcClientTs(signinRedirectCallback, removeUser);
+
+    const { completeSignin } = await import("./userManager");
+
+    await expect(completeSignin()).rejects.toBe(err);
+    order.push("rejected");
+
+    expect(order).toEqual(["removeUser-start", "removeUser-end", "rejected"]);
+    expect(removeUser).toHaveBeenCalledTimes(1);
   });
 
   it("(d) duas chamadas seguidas devolvem a mesma promessa e signinRedirectCallback roda 1x", async () => {

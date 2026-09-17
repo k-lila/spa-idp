@@ -4,8 +4,8 @@
 |---|---|
 | Status | proposto — 2026-09-14 |
 | Depende de | `spa-nucleo.md`, `contrato-frontend.md` |
-| Decisões fixadas aqui | D1 = `oidc-client-ts`; D2 = gestão de conta linkada ao IdP — **emendada pela ADR 0012: sem páginas de conta nesta fase**; dev contra IdP fake local|
-| Decisões ainda abertas | mecanismo de sobrevivência ao reload (§7.2); verificação do `id_token` — assinatura, `iss`, `aud`, `exp` (§7.1) |
+| Decisões fixadas aqui | D1 = `oidc-client-ts`; D2 = gestão de conta linkada ao IdP — **emendada pela ADR 0012: sem páginas de conta nesta fase**; dev contra IdP fake local; verificação do `id_token` com `jose` — **ADR 0013** |
+| Decisões ainda abertas | mecanismo de sobrevivência ao reload (§7.2) |
 
 Este documento fecha o que a conversa de UX decidiu e ordena a implementação da
 aplicação de página única (SPA) que atua como Relying Party do provedor de identidade
@@ -136,14 +136,10 @@ validação contra o `monolito-idp` quando ele tiver endereço — essa é a úl
 
 ## §7. Decisões que aguardam o mantenedor
 
-1. **Verificação do `id_token`.** `oidc-client-ts` 3.5.0 valida só `sub` e `nonce`; **não**
-   verifica assinatura, `iss`, `aud` nem `exp` (fato verificado na TASK-003; a redação
-   original desta seção afirmava o contrário). O invariante I4 exige tudo isso. Opções:
-   - *Acrescentar verificação com `jose`* após o `signinRedirectCallback`, cobrindo
-     assinatura via `jwks_uri` do discovery **e** `iss`/`aud`/`exp`. Pró: I4 preservado.
-     Contra: código a mais fora da biblioteca. (Recomendação do `contrato-frontend.md` §5.1.)
-   - *Relaxar I4 por ADR*, aceitando a justificativa da biblioteca. Pró: menos código.
-     Contra: muda um invariante do núcleo e deixa `iss`/`aud`/`exp` sem verificação nenhuma.
+1. **Verificação do `id_token`.** Fechado pela ADR 0013: `oidc-client-ts` 3.5.0 valida só
+   `sub` e `nonce`; a SPA verifica com `jose`, em `completeSignin()` e antes das claims, a
+   assinatura (JWKS do `jwks_uri` da descoberta, RS256), `iss` por igualdade exata com
+   `VITE_OIDC_ISSUER`, `aud` = `client_id` e `exp` com tolerância. I4 cumprido.
 2. **Sessão no reload.** `restoreSession()` nasce vazia. Candidatos:
    - *Silent auth via `prompt=none`* (redirect top-level). Só OIDC padrão; um redirect por
      reload.

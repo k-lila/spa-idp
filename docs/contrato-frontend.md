@@ -290,7 +290,7 @@ documento.
 
 ### Código
 
-- [ ] `jose` integrado em `completeSignin()`: assinatura via `jwks_uri` da descoberta,
+- [x] `jose` integrado em `completeSignin()`: assinatura via `jwks_uri` da descoberta,
       `issuer`, `audience`, `RS256`, `exp` com tolerância; falha → `removeUser()` + erro do
       callback; teste unitário cobrindo token adulterado, `iss` errado, `aud` errado, expirado
 - [ ] `vercel.json` com rewrite universal, `Referrer-Policy: no-referrer` e
@@ -324,7 +324,7 @@ documento.
 
 ### Registro
 
-- [ ] ADR: verificação do `id_token` com `jose` (I4), com referência ao `integracao-rp.md`
+- [x] ADR: verificação do `id_token` com `jose` (I4), com referência ao `integracao-rp.md`
 - [ ] ADR: sessão no reload por redirect + SSO (§7.2), com referência à ADR do IdP
 - [x] ADR: emenda a D2 (sem páginas de conta), com referência à ADR do IdP
 - [ ] ADR: issuer de produção fixado, com referência à ADR do IdP

@@ -32,8 +32,7 @@ um IdP fake local.
 
 ### Decisões em aberto (não resolver unilateralmente)
 
-Listadas em `docs/plano-pre-implementacao.md`, §7: verificação do `id_token` (assinatura,
-`iss`, `aud`, `exp`) versus invariante I4; mecanismo de sessão no reload.
+Listadas em `docs/plano-pre-implementacao.md`, §7: mecanismo de sessão no reload (§7.2).
 
 ## Regras de trabalho
 
