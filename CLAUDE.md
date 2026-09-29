@@ -6,12 +6,13 @@ que funciona. Não faça over-engineering.
 ## Sobre o projeto
 
 SPA em React + TypeScript + Tailwind que atua como **Relying Party OIDC** do IdP
-`k-lila/monolito-idp` (Django), em origem diferente (Vercel × Render/AWS). Ela não colhe
+`k-lila/monolito-idp` (Django), em origem diferente (Vercel × AWS). Ela não colhe
 senha nem escreve no diretório de usuários: autentica por redirect + PKCE, guarda tokens
 em memória e renderiza a identidade afirmada pelo IdP.
 
-Ainda não há código. O back-end está offline e sem endereço; o desenvolvimento roda contra
-um IdP fake local.
+O código cumpre o contrato (`docs/contrato-frontend.md` §9, "Código"), e a integração em
+desenvolvimento fecha contra o IdP real em `http://localhost:8000/o`. O IdP fake local
+(`dev/idp-fake/`) continua servindo aos e2e. Produção aguarda o IdP publicado na AWS.
 
 ### Fonte de verdade (leia antes de decidir qualquer coisa)
 

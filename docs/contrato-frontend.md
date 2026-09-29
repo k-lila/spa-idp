@@ -3,10 +3,11 @@
 | Campo | Valor |
 | --- | --- |
 | Destinatário | projeto `nova_api_SPA` (relying party, RP) |
-| Contraparte | projeto `nova_api` (provedor de identidade, IdP), que recebe o `contrato-backend.md` |
+| Contraparte | projeto `nova_api` (provedor de identidade, IdP), que recebe o `plano-implantacao.md` |
 | Origem | levantamento de 2026-09-16 (`contrato-geral.md`, `desavencas-parciais.md`, `desavencas.md`, na raiz `idp/`) |
 | Ambientes | produção: SPA na Vercel, IdP na AWS (prioritário) · desenvolvimento: tudo em `localhost` |
 | Critério de pronto | a checklist da seção 9 inteira marcada |
+| Conferido | §1, §2.1 e §6.2 contra o código dos dois projetos em 2026-09-23 |
 
 Este documento diz **o que** a SPA precisa preservar, implementar, configurar e decidir para
 fechar o fluxo OpenID Connect (OIDC) contra o IdP real — não contra o fake de `dev/idp-fake/`.
@@ -28,7 +29,8 @@ O IdP é um monólito Django com `django-oauth-toolkit` (DOT), em origem diferen
 - compara `redirect_uri` por **igualdade exata** (esquema, host, porta, path, barra final);
 - aceita cliente público em `/o/token/` sem secret; o endpoint é chamável do navegador **desde
   que a origem da SPA esteja na allowlist de CORS** (Cross-Origin Resource Sharing) — que
-  hoje está vazia e será preenchida pelo IdP com a origem que a SPA entregar;
+  hoje tem `http://localhost:5173` no IdP de desenvolvimento e recebe `https://<spa>` no
+  `.env` da instância de produção;
 - emite `id_token` RS256 com `sub` (string), `name` (**pode ser `""`**), `email`, mais `iss`,
   `aud`, `exp`, `iat`, `nonce`; **não** emite `email_verified`; publica uma chave RSA com `kid`
   em `jwks_uri`;
@@ -57,10 +59,12 @@ contra o real.
 
 ### 2.1 CORS restrito de verdade
 
-O fake ecoa qualquer `Origin` em descoberta e JWKS. O IdP real só responde com
-`Access-Control-Allow-Origin` para a origem exata da allowlist, nos quatro caminhos
-(descoberta, `jwks_uri`, `/o/token/`, `/o/userinfo/`). Um erro de CORS aparece no navegador
-como falha de rede, sem status — a SPA já trata isso como estado de erro do callback.
+O fake ecoa qualquer `Origin` em descoberta e JWKS. No IdP real, a allowlist governa só os
+dois caminhos que carregam token, `/o/token/` e `/o/userinfo/`: eles respondem com
+`Access-Control-Allow-Origin` apenas para a origem exata da lista. Descoberta e `jwks_uri` são
+públicos e respondem a qualquer origem, com `*`, ou com a origem exata quando ela está na lista
+(ADR 0022 do IdP; `plano-implantacao.md` §2.3). Um erro de CORS aparece no navegador como falha
+de rede, sem status — a SPA já trata isso como estado de erro do callback.
 
 ### 2.2 Tela de consentimento
 
@@ -121,7 +125,7 @@ não autenticam — renderizam a landing e "Entrar" falha, comportamento já exi
 
 O que este projeto **recebe** do IdP, por ambiente: o `issuer` (`https://<dominio-do-idp>/o`
 em produção, `http://localhost:8000/o` em dev) e o `client_id` de cada `Application`. O
-`contrato-backend.md` pede ao IdP que os entregue.
+`plano-implantacao.md` pede ao IdP que os entregue.
 
 ---
 
@@ -238,12 +242,13 @@ apontar para o real.
 ### 6.2 Produção: Vercel
 
 - Variáveis **no painel da Vercel, por ambiente**. Production: issuer e `client_id` de produção,
-  `VITE_OIDC_REDIRECT_URI=https://<spa>/callback`. Preview: nada (a build falha, o que é
-  desejável) ou os valores do cliente de preview, se houver alias. Development: os do IdP
+  `VITE_OIDC_REDIRECT_URI=https://<spa>/callback`. Preview: nada (o build passa, e a
+  aplicação lança no boot em `config.ts`, ADR 0005, o que é desejável) ou os valores do cliente de preview, se houver alias. Development: os do IdP
   local. Nunca o mesmo valor nos três. Nada commitado (I6): um `.env.production` no
   repositório seria carregado também pelos previews.
-- Node 22 fixado no projeto da Vercel (ela não lê `.nvmrc`, e `engines >=22.13` permite build
-  em Node 24, que nenhum teste exercitou).
+- Node 22 no build da Vercel. Ela não lê `.nvmrc`, mas respeita `engines.node` do
+  `package.json`, que hoje é `>=22.13 <23`; conferir no log do primeiro build que a versão usada
+  é a 22, e manter a configuração do projeto na Vercel coerente com ela.
 - Gate de CI (`typecheck`, `lint`, `test`) antes do deploy de produção; deploy de produção só
   a partir da branch principal.
 - Previews: seção 4. Não pedir ao IdP regex de `*.vercel.app` — é domínio compartilhado por

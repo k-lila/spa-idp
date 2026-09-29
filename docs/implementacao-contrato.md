@@ -4,7 +4,7 @@
 | --- | --- |
 | Origem | `docs/contrato-frontend.md`, §5 a §9 |
 | Data | 2026-09-16 |
-| Status | estudo, sem código; ordem proposta para as tarefas |
+| Status | passos 1 a 5 fechados (2026-09-17); passo 6 aguarda o IdP publicado na AWS |
 | Critério de pronto | cada passo fecha itens da checklist §9 do contrato; o contrato fecha quando todos os passos fecharem |
 
 O contrato diz **onde** a SPA precisa chegar. Este documento diz **em que ordem** e **com que
@@ -16,7 +16,7 @@ Nada aqui muda decisão do contrato — onde o contrato recomenda, este document
 resto). Depois o único item grande e de risco (verificação do `id_token`), enquanto ainda dá para
 testar contra o fake. Depois os ajustes pequenos. Depois os artefatos de deploy. Por fim, as
 verificações contra o IdP real — em desenvolvimento e em produção —, que dependem do outro
-projeto ter cumprido o `contrato-backend.md`.
+projeto ter cumprido o `plano-implantacao.md` do IdP.
 
 ---
 
@@ -175,7 +175,8 @@ Fecha: contrato §5.2 e parte do §6.2; checklist "Código" (`vercel.json`), "Pr
   teste exercitou. Fixar no painel (ou apertar `engines`) — decidir na hora da configuração.
 - O domínio do IdP ainda é `<dominio-do-idp>`. A ADR do issuer fixa a **forma** (`https://…/o`,
   sem barra final) e deixa o host para quando o IdP entregar.
-- Preview sem variáveis: a build falha em `config.ts`, o que é desejável. Só criar cliente de
+- Preview sem variáveis: o build passa, e a aplicação lança no boot em `config.ts` (ADR 0005),
+  o que é desejável. Só criar cliente de
   preview no IdP se houver alias estável.
 
 ---
@@ -250,4 +251,4 @@ Fecha: contrato §6.2 e §7 (produção); checklist "Produção" restante.
 | 6. Produção na Vercel | Produção: restante | passos 4 e 5; IdP na AWS |
 
 Os passos 1 a 4 são executáveis hoje, contra o fake. Os passos 5 e 6 esperam o IdP cumprir o
-`contrato-backend.md`.
+`plano-implantacao.md` do IdP.

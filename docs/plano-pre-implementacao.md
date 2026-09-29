@@ -143,11 +143,11 @@ validação contra o `monolito-idp` quando ele tiver endereço — essa é a úl
    consulta só a memória e após reload responde "sem sessão"; a rota protegida vai a
    `/o/authorize/` e o cookie de sessão do IdP (`SameSite=Lax`, navegação top-level) devolve
    sem senha. Reload sem tela de consentimento depende de `skip_authorization` na
-   `Application` da SPA (`nova_api/docs/contrato-backend.md` §5.3). Nada de token fora da
+   `Application` da SPA (`nova_api/docs/plano-implantacao.md` §2.4). Nada de token fora da
    memória: `sessionStorage` + `refresh_token` foi descartado porque o `refresh_token` do IdP
    não expira. Candidatos descartados: silent auth `prompt=none` (mesmo custo, e em iframe
    depende de cookie cross-site que o fake same-site mascara) e renovação via back-end com
-   cookie (o `contrato-backend.md` não prevê cookie cross-site nem endpoint próprio).
+   cookie (o `plano-implantacao.md` do IdP não prevê cookie cross-site nem endpoint próprio).
 3. **Caminhos das páginas de conta.** Fechado pela ADR 0012: o IdP não tem páginas de
    conta nesta fase; `VITE_IDP_ACCOUNT_URL` foi removida.
 

@@ -40,6 +40,7 @@
 | 2026-09-17 | Fixar `requestTimeoutInSeconds` em 15 s no `UserManager` | docs/adr/0015-fixar-requesttimeoutinseconds-em-15-s-no-usermanager.md |
 | 2026-09-17 | Publicar a SPA na Vercel com `vercel.json`, variáveis por ambiente no painel e previews sem IdP de produção | docs/adr/0016-publicar-na-vercel-com-vercel-json-variaveis-por-ambiente-e-previews-sem-idp-de-producao.md |
 | 2026-09-17 | Fixar `VITE_OIDC_ISSUER` de produção na forma `https://<dominio-do-idp>/o`, sem barra final | docs/adr/0017-fixar-vite-oidc-issuer-de-producao-em-https-dominio-do-idp-barra-o-sem-barra-final.md |
+| 2026-09-24 | Aceitar o IdP de produção servido pelo Cloudflare Tunnel com o contrato inalterado (proposta; contraparte da ADR 0027 do IdP) | docs/adr/0018-aceitar-o-idp-de-producao-servido-pelo-cloudflare-tunnel-com-o-contrato-inalterado.md |
 
 ---
 
@@ -222,3 +223,21 @@ memória — é sedimento.
 - **ADR:** nenhuma.
 - **Tech-debt / melhorias:** pendências que o passo 5 deveria aproveitar para conferir (TASK-005: preflight de `/o/userinfo/` com `authorization` em `Allow-Headers`, 401 saindo com cabeçalho CORS, ramo "segundo 401 → falha sem redirect"; TASK-010 AC-16: 429 real) **não foram relatadas** — seguem abertas, sem dono; candidatas a `/review` própria ou à verificação em produção (TASK-013, AC-11).
 - **Tipo:** observação.
+
+## [2026-09-23] Pendências da TASK-005 contra o IdP real (fecha parte da nota da TASK-012)
+- **Decisão:** conferência documental, sem código. Duas das pendências que a TASK-012 deixou abertas têm evidência: (1) preflight de `/o/userinfo/` com `authorization` em `Allow-Headers` — confirmado de forma implícita pelo item 1 do §7 do contrato (7/7): `localhost:5173` → `localhost:8000` é cross-origin, e o `GET` com `Authorization: Bearer` só chega às claims renderizadas se o preflight passar; (2) 401 saindo com cabeçalho CORS — confirmado do lado do IdP, com `curl` e `Origin` da SPA (`nova_api/docs/plano-contrato-backend.md`, checklist do passo 4). Seguem abertos, sem dono: o ramo "segundo 401 → falha sem redirect" (exige revogar o token no meio da sessão; tem cobertura unitária) e o 429 real (TASK-010 AC-16); candidatos à verificação em produção (passo 6).
+- **ADR:** nenhuma.
+- **Tipo:** observação.
+
+## [2026-09-24] TASK-021 do IdP · ADR 0018 proposta (contraparte da 0027)
+
+- **Decisão:** a SPA aceita o IdP de produção servido pelo Cloudflare Tunnel sem mudar código nem
+  contrato; `VITE_OIDC_ISSUER` conferido byte a byte contra a descoberta; riscos da borda (tokens e
+  cookie de sessão) e da chave na máquina de quem opera aceitos sob o gatilho da 0027; troca de
+  chave não exige redeploy mas derruba o login por até 1–2 h (ADR 0013). Registro completo no
+  `decisions.md` do `nova_api`, TASK-021.
+- **ADR:** docs/adr/0018-aceitar-o-idp-de-producao-servido-pelo-cloudflare-tunnel-com-o-contrato-inalterado.md
+- **Tech-debt / melhorias:** adiado — comentário de `src/auth/idToken.ts:11` contradiz a ADR 0013
+  (diz que `createRemoteJWKSet` absorve troca de `kid`); `CLAUDE.md` ainda cita a AWS (linhas 9 e
+  15), a revisar no passo 5 do plano do IdP.
+- **Tipo:** decisão.
