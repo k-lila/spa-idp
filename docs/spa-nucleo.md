@@ -2,14 +2,14 @@
 
 | Campo | Valor |
 |---|---|
-| Componente | SPA — Relying Party OIDC |
-| Back-end | `k-lila/monolito-idp` (Django · OIDC IdP) |
+| Componente | SPA — Relying Party OIDC (OpenID Connect) |
+| Back-end | `k-lila/monolito-idp` (Django · provedor de identidade, IdP) |
 | Stack base | React + TypeScript + Tailwind |
-| Deploy | Vercel (front) · Render/AWS (back) — **cross-origin** |
-| Modelo de confiança | autorização por **token** (redirect + PKCE) |
-| Status | núcleo definido; itens em aberto marcados em §5 |
+| Deploy | Vercel (SPA) · IdP servido pelo Cloudflare Tunnel (ADRs 0016, 0018) — **cross-origin** |
+| Modelo de confiança | autorização por **token** (redirect + PKCE, Proof Key for Code Exchange) |
+| Status | em produção; decisões D1 e D2 fechadas (§5) |
 | Audiência | time de subagentes de implementação |
-| Documentos irmãos | `contrato-frontend.md`, `plano-pre-implementacao.md` |
+| Decisões | `docs/adr/` (ADRs, Architecture Decision Records) |
 
 ---
 
@@ -18,8 +18,8 @@
 Palavras normativas: **DEVE** (obrigatório), **NÃO DEVE** (proibido),
 **PODE** (permitido, a critério do implementador). Onde este documento diz
 DEVE ou NÃO DEVE, um subagente **não tem autonomia** para divergir. Onde diz
-PODE, tem. Decisões ainda não tomadas estão em §5 e **não devem ser resolvidas
-unilateralmente** por um subagente — aguardam definição do mantenedor.
+PODE, tem. As decisões fixadas estão em §5 e nas ADRs; revê-las é do mantenedor,
+não de um subagente.
 
 Este documento declara o **núcleo** (stack e invariantes). Ele **não** define
 páginas, telas ou layout.
@@ -61,55 +61,53 @@ contrarie isso está errada, mesmo que seja "o padrão" em um projeto React comu
 
 ---
 
-## §3. Núcleo (decidir e montar primeiro; molda todo o resto)
+## §3. Núcleo
 
 | Camada | Escolha | Papel |
 |---|---|---|
-| Build / dev server | **Vite** | Build e dev server; proxy de dev para simular mesmo origin contra o back-end |
+| Build / dev server | **Vite** | Build e dev server (porta fixa 5173) |
 | Rigor de tipos | **TS `strict` + ESLint + Prettier** | Erro de contrato em compile-time; espelha o rigor do back-end |
-| Roteamento | **React Router** | Rota de callback, guarda de rota (I8), deep-link |
-| Auth / OIDC | **`oidc-client-ts` _ou_ PKCE à mão** (ver §5, D1) | PKCE, troca de token, validação do `id_token` (I4), silent renew |
-| Cliente HTTP | **wrapper de `fetch`** (interceptors) | Anexa `Bearer`; trata `401` → re-auth |
-| Estado de servidor | **TanStack Query** | Cache de dados remotos (`userinfo`/conta), revalidação, loading/erro |
-| Config por ambiente | **Vite env (`VITE_*`)** | `issuer`, `client_id`, `redirect_uri` por ambiente (I6); cobre o problema das preview URLs |
-| Validação de borda | **zod** | Valida claims e payloads em runtime (I7) |
+| Roteamento | **React Router v7**, data router (ADR 0003) | Rota de callback, guarda de rota (I8), deep-link (ADR 0011) |
+| Auth / OIDC | **`oidc-client-ts`** (D1, ADR 0006) + **`jose`** (ADR 0013) | PKCE, troca de token, logout (ADR 0019); `jose` verifica o `id_token` (I4). Sem silent renew (ADR 0014) |
+| Cliente HTTP | **wrapper de `fetch`** em `src/api/http.ts` (ADR 0008) | Anexa `Bearer`; trata `401` → re-auth |
+| Estado de servidor | **TanStack Query** (ADR 0009) | Cache do `userinfo`, chaveado pelo `sub`; loading/erro |
+| Config por ambiente | **Vite env (`VITE_*`)** validado em `src/config.ts` (ADR 0005) | Issuer, `client_id`, `redirect_uri` e `post_logout_redirect_uri` por ambiente (I6) |
+| Validação de borda | **zod** (ADR 0007) | Valida claims e payloads em runtime (I7) |
 
 ---
 
-## §4. Suporte (necessário, porém mais leve ou adiável)
+## §4. Suporte
 
-| Camada | Escolha | Condição |
+| Camada | Escolha | Observação |
 |---|---|---|
-| Estado de UI | React nativo (context/`useReducer`); Zustand só se crescer | O único estado global real é sessão/auth |
-| Formulários | react-hook-form + zod | **Somente se** a gestão de conta viver na SPA (ver §5, D2) |
-| Primitivos de UI | Tailwind + shadcn/ui (Radix) | Acessibilidade (foco, teclado) por cima do Tailwind |
-| Testes | Vitest + Testing Library; Playwright p/ e2e | O fluxo de redirect/auth é e2e por natureza |
-| Erro + CI | Error Boundary; typecheck/lint/test antes do deploy | Cobre caminhos de falha de auth/rede; gate antes de preview/prod |
+| Estado de UI | React nativo (context) | O único estado global real é sessão/auth |
+| Estilo | Tailwind v4 pelo plugin do Vite (ADR 0002) | Sem biblioteca de componentes |
+| Testes | Vitest + Testing Library; Playwright p/ e2e | Os e2e rodam contra o IdP fake de `dev/idp-fake/` (ADR 0004) |
+| CI | `.github/workflows/ci.yml` | Typecheck, lint, format e testes unitários; e2e só local |
+| Deploy | Vercel com `vercel.json` (ADR 0016) | Rewrite para `/index.html`; variáveis por ambiente; previews não autenticam |
 
 ---
 
-## §5. Decisões em aberto (NÃO resolver unilateralmente)
+## §5. Decisões fixadas
 
-- **D1 — Biblioteca OIDC vs PKCE à mão.** `oidc-client-ts` (correto, menos
-  código) versus implementar PKCE à mão (mais linhas, demonstra domínio do
-  protocolo — mais legível como portfólio). É a única decisão de arquitetura
-  real do núcleo. **Aguardar definição do mantenedor.**
-- **D2 — Onde vive a gestão de conta** (cadastro, edição de perfil): dentro da
-  SPA, ou linkada às páginas server-side do IdP. Esta decisão **fecha a metade de
-  suporte** da tabela (formulários e parte do estado de UI só entram se for
-  "dentro da SPA"). **Aguardar definição do mantenedor.**
+- **D1 — Biblioteca OIDC.** `oidc-client-ts`, não PKCE à mão (ADR 0006).
+- **D2 — Gestão de conta.** Nenhuma nesta fase: nem na SPA, nem por link ao IdP,
+  que não tem páginas de cadastro ou edição de perfil. Contas são criadas pelo admin
+  do IdP (ADR 0012).
+- **Sessão no reload.** Redirect ao IdP + sessão de login dele (SSO); tokens só em
+  memória; o `refresh_token` que o IdP devolve é recebido e nunca usado (ADR 0014).
 
 ---
 
 ## §6. Restrições (lista de varredura rápida)
 
 - **NÃO DEVE** persistir token fora da memória (I3).
+- **NÃO DEVE** usar o `refresh_token` (ADR 0014).
 - **NÃO DEVE** criar tela ou campo de senha na SPA (I8).
-- **NÃO DEVE** hardcodar `issuer`, `client_id` ou `redirect_uri` (I6).
+- **NÃO DEVE** hardcodar issuer, `client_id`, `redirect_uri` ou
+  `post_logout_redirect_uri` (I6).
 - **NÃO DEVE** chamar a API de conta com o `access_token` da RP — confusão de
-  audiência (I1); enquanto D2 estiver aberto, não construir essa chamada.
+  audiência (I1); gestão de conta está fora do escopo (D2).
 - **NÃO DEVE** adicionar estado global pesado (Redux/MobX): o único global real
   é sessão/auth.
-- **NÃO DEVE** introduzir biblioteca de UI pesada; primitivos vêm de
-  shadcn/Radix sobre Tailwind.
-- **NÃO DEVE** resolver D1 ou D2 por conta própria (§5).
+- **NÃO DEVE** introduzir biblioteca de UI; o estilo é Tailwind.
