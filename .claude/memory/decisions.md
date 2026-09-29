@@ -41,6 +41,7 @@
 | 2026-09-17 | Publicar a SPA na Vercel com `vercel.json`, variáveis por ambiente no painel e previews sem IdP de produção | docs/adr/0016-publicar-na-vercel-com-vercel-json-variaveis-por-ambiente-e-previews-sem-idp-de-producao.md |
 | 2026-09-17 | Fixar `VITE_OIDC_ISSUER` de produção na forma `https://<dominio-do-idp>/o`, sem barra final | docs/adr/0017-fixar-vite-oidc-issuer-de-producao-em-https-dominio-do-idp-barra-o-sem-barra-final.md |
 | 2026-09-24 | Aceitar o IdP de produção servido pelo Cloudflare Tunnel com o contrato inalterado (proposta; contraparte da ADR 0027 do IdP) | docs/adr/0018-aceitar-o-idp-de-producao-servido-pelo-cloudflare-tunnel-com-o-contrato-inalterado.md |
+| 2026-09-29 | Sair por logout iniciado pela RP com `signoutRedirect()` sem `state` (substitui a 0010; emenda a cláusula de logout da 0004; contraparte da ADR 0029 do IdP) | docs/adr/0019-sair-por-logout-iniciado-pela-rp-com-signoutredirect-sem-state.md |
 
 ---
 
@@ -240,4 +241,51 @@ memória — é sedimento.
 - **Tech-debt / melhorias:** adiado — comentário de `src/auth/idToken.ts:11` contradiz a ADR 0013
   (diz que `createRemoteJWKSet` absorve troca de `kid`); `CLAUDE.md` ainda cita a AWS (linhas 9 e
   15), a revisar no passo 5 do plano do IdP.
+- **Tipo:** decisão.
+
+## [2026-09-29] TASK-014 · Modificação B, lado da SPA: "Sair" por logout iniciado pela RP
+
+- **Decisão:** rota `/feature` completa (PM → architect → writer → QA → tester → QA → senso-critico
+  → writer). `signout()` passa a `signoutRedirect()` sem `state`; `VITE_OIDC_POST_LOGOUT_REDIRECT_URI`
+  obrigatória (`requiredUrl`, com barra final); na rejeição, `Area` navega a `/` com
+  `history.state` `{ signoutFailed: true }` e a `Landing` alerta; resolução (bfcache) recarrega. Fake
+  com `rpInitiatedLogout` e `logoutSource` que auto-submete `logout=yes` quando o `sub` do hint é o
+  da sessão. `RequireAuth`/`AuthProvider` intocados (trava `hadSession` repetida na 0019). Verificado:
+  typecheck/lint/prettier; Vitest 107/107, também sem `.env.local`; Playwright 9/9 (t06 renomeado
+  para `t06-sair-logout-rp.spec.ts`, 3 casos); T-01..T-09 validados por mutação pelo QA. A 0019 foi
+  corrigida antes do commit para seguir a ADR 0029 real do IdP (não o `retoques.md`): revogação só
+  na Application; pergunta com hint sem linha; link relativo à 0029. Decisões do usuário no gate:
+  corrigir docs sem código novo; barra final só documentada (contrato §4 e §6.2); divergência do
+  fake só registrada.
+- **ADR:** docs/adr/0019-sair-por-logout-iniciado-pela-rp-com-signoutredirect-sem-state.md; 0010
+  com status "Substituído por ADR-0019"; 0004 intocada (cláusula de logout emendada pela 0019).
+- **Notas cruzadas para o `nova_api`:** a ADR 0029 está "Proposto" e passa a Aceito com o caminho
+  da 0019 na seção Decisão — a fazer lá (regra da raiz: uma ADR aponta para a outra).
+- **Tech-debt / melhorias:**
+  - Obsoleto (PM, CRITICO R4): `STRICT_REDIRECT_URIS` recusaria `http://localhost:5173/` — a 0029 já
+    o faz acompanhar `BEHIND_TLS_PROXY`; dev aceita http.
+  - Aceito e aplicado (PM, CRITICO R2/R3; observações sobre `state`, 0004, 0010): ver Decisão.
+  - Aceito e aplicado (QA, ALTA): `config.test.ts` dependia do `.env.local` e quebraria o CI → T-01.
+  - Aceito, documentado sem código (senso-critico, MEDIO): o alerta só cobre a rejeição dentro da
+    página; recusas do IdP depois da navegação (túnel fora, 400 por destino ou chave) deixam a
+    sessão Django viva, e "Voltar" + SSO devolvem a pessoa logada. Reabrir se virar incômodo real.
+  - Aceito, documentado sem código (senso-critico, MEDIO): barra final do
+    `post_logout_redirect_uri` sem proteção no boot nem no admin; conferir no deploy (§6.2).
+  - Aceito, registrado (senso-critico, MEDIO): o fake auto-submete com hint sem linha no banco (duas
+    abas); o real pergunta. Sem cobertura e2e.
+  - Aceito sem ação (senso-critico, BAIXO): `signoutFailed` reaparece em reload/"Voltar" da mesma
+    entrada — afirmação continua verdadeira. Ordem `removeUser`/descoberta da lib fixada por
+    `userManager.lib.test.ts` (a1/a2).
+  - Aceito, operação (architect, ALTO): ordem de implantação IdP → cadastro do destino → variável na
+    Vercel (Production) → SPA; sem a variável o boot cai inteiro.
+  - Aceito sem ação (architect, MEDIO): reload do bfcache só tem cobertura unitária; ADR 0004 fica
+    com a cláusula antiga no corpo (imutável), com ponteiro em `server.js`.
+  - Adiado, `/chore` própria: `RequireAuth.tsx:15-16` e `AuthProvider.tsx:25` citam a ADR 0010
+    substituída → trocar para 0019. Idem comentário órfão da ADR 0012 no `.env.local` (local).
+  - Aceito sem ação: T-08 com `waitForTimeout(500)` por volta (frágil em máquina lenta); linha > 100
+    colunas no cabeçalho de `userManager.lib.test.ts` (cosmético); commit deve levar o rename do t06.
+  - Adiado, verificação manual (AC-14): contra o IdP real local — "Sair" → landing; "Entrar" pede
+    senha; `access_token` anterior 401 em `/o/userinfo/`; raiz do IdP sem sessão. Exige
+    `post_logout_redirect_uris` = `http://localhost:5173/` na Application de dev e
+    `VITE_OIDC_POST_LOGOUT_REDIRECT_URI` no `.env.local` (já feito). Em produção, depois do deploy.
 - **Tipo:** decisão.

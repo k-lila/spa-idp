@@ -22,16 +22,18 @@ export function Area() {
       <section className="flex flex-col items-center gap-2">
         <button
           type="button"
-          // Navegar só depois de a sessão morrer: com ela viva, Landing devolveria a /app (ADR 0010).
-          onClick={() => void auth.signout().then(() => navigate("/"))}
+          // No sucesso quem navega é o IdP; na falha, o botão, já sem sessão (ADR 0019). Sem
+          // `replace`: /app fica no histórico e "Voltar" passa pela guarda.
+          onClick={() =>
+            void auth.signout().catch((err: unknown) => {
+              console.error(err);
+              void navigate("/", { state: { signoutFailed: true } });
+            })
+          }
           className="rounded border border-neutral-900 px-4 py-2"
         >
           Sair
         </button>
-        <p className="text-sm text-neutral-600">
-          Sair só esquece a sessão nesta aplicação. A sessão no provedor de identidade continua
-          ativa: um novo Entrar pode acontecer sem pedir senha.
-        </p>
       </section>
     </main>
   );

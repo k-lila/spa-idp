@@ -20,6 +20,10 @@ export const config = {
     issuer: requiredUrl("VITE_OIDC_ISSUER", import.meta.env.VITE_OIDC_ISSUER),
     clientId: required("VITE_OIDC_CLIENT_ID", import.meta.env.VITE_OIDC_CLIENT_ID),
     redirectUri: requiredUrl("VITE_OIDC_REDIRECT_URI", import.meta.env.VITE_OIDC_REDIRECT_URI),
+    postLogoutRedirectUri: requiredUrl(
+      "VITE_OIDC_POST_LOGOUT_REDIRECT_URI",
+      import.meta.env.VITE_OIDC_POST_LOGOUT_REDIRECT_URI,
+    ),
     scope: "openid profile email", // contrato (plano §3), não varia por ambiente
   },
 } as const;

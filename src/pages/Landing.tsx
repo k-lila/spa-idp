@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Navigate } from "react-router";
+import { Navigate, useLocation } from "react-router";
 import { useAuth } from "../auth/AuthContext";
 
 export function Landing() {
   const auth = useAuth();
   const [failed, setFailed] = useState(false);
+  const signoutFailed = hasSignoutFailed(useLocation().state);
   // Ainda não se sabe se há sessão: nada de "Entrar" antes de restoreSession() responder (ADR 0014).
   if (auth.status === "loading") return null;
   if (auth.status === "authenticated") return <Navigate to="/app" replace />;
@@ -32,6 +33,21 @@ export function Landing() {
           Não foi possível iniciar o login.
         </p>
       )}
+      {signoutFailed && (
+        <p role="alert" className="text-red-700">
+          Não foi possível encerrar a sessão no provedor de identidade.
+        </p>
+      )}
     </main>
+  );
+}
+
+// Estado de navegação que o "Sair" de /app deixa quando o logout não chegou ao IdP (ADR 0019).
+function hasSignoutFailed(state: unknown): boolean {
+  return (
+    typeof state === "object" &&
+    state !== null &&
+    "signoutFailed" in state &&
+    state.signoutFailed === true
   );
 }

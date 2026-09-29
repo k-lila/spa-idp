@@ -8,6 +8,7 @@ export const userManager = new UserManager({
   authority: config.oidc.issuer, // I5: só o issuer; o resto vem do discovery
   client_id: config.oidc.clientId,
   redirect_uri: config.oidc.redirectUri,
+  post_logout_redirect_uri: config.oidc.postLogoutRedirectUri,
   response_type: "code", // I2 (default da v3, explícito porque é contrato)
   scope: config.oidc.scope,
   userStore: new WebStorageStateStore({ store: new InMemoryWebStorage() }), // I3: tokens só em memória
@@ -81,9 +82,15 @@ function internalPath(state: unknown): string {
   return url.origin === window.location.origin ? url.pathname + url.search + url.hash : "/app";
 }
 
-/** Só esquece os tokens em memória; nada vai ao IdP (plano §2.4, ADR 0010). Resolve após `userUnloaded`. */
-export function signout(): Promise<void> {
-  return userManager.removeUser();
+/**
+ * Sair vai ao `end_session_endpoint` da descoberta, sem `state` (ADR 0019). A lib esquece os
+ * tokens (`userUnloaded`) antes de qualquer rede: rejeitar significa que a página não saiu, já sem
+ * sessão local. Resolver só acontece na volta do IdP pelo bfcache; o reload faz a guarda remontar
+ * sem sessão e ir ao IdP.
+ */
+export async function signout(): Promise<void> {
+  await userManager.signoutRedirect();
+  window.location.reload();
 }
 
 /**

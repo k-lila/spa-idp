@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ZodError } from "zod";
 
 // config.ts lança no import se faltarem VITE_*; mockamos para ter valores estáveis.
@@ -8,6 +8,7 @@ const fakeConfig = {
     issuer: "http://idp.test/o",
     clientId: "spa-test",
     redirectUri: "http://app.test/callback",
+    postLogoutRedirectUri: "http://app.test/",
     scope: "openid profile email",
   },
 };
@@ -290,5 +291,85 @@ describe("signin", () => {
 
     resolveRedirect();
     await Promise.all([first, second]);
+  });
+});
+
+describe("signout", () => {
+  function mockOidcClientTsForSignout(
+    signoutRedirect: ReturnType<typeof vi.fn>,
+    removeUser: ReturnType<typeof vi.fn>,
+  ) {
+    vi.doMock("oidc-client-ts", async (importOriginal) => {
+      const actual = await importOriginal<typeof import("oidc-client-ts")>();
+      return {
+        ...actual,
+        UserManager: vi.fn().mockImplementation(function () {
+          return {
+            signinRedirectCallback: vi.fn(),
+            removeUser,
+            signoutRedirect,
+            signinRedirect: vi.fn(),
+            getUser: vi.fn(),
+            events: { addUserLoaded: vi.fn(() => vi.fn()) },
+          };
+        }),
+      };
+    });
+  }
+
+  // jsdom não deixa espionar location.reload; troca-se o `location` global por um objeto mínimo.
+  const reload = vi.fn();
+  beforeEach(() => {
+    reload.mockClear();
+    vi.stubGlobal("location", { reload });
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("(i) signoutRedirect 1x, sem argumentos (sem state nem id_token_hint); ao resolver (bfcache), reload 1x", async () => {
+    const signoutRedirect = vi.fn().mockResolvedValue(undefined);
+    mockOidcClientTsForSignout(signoutRedirect, vi.fn());
+
+    const { signout } = await import("./userManager");
+    await signout();
+
+    expect(signoutRedirect).toHaveBeenCalledTimes(1);
+    expect(signoutRedirect).toHaveBeenCalledWith();
+    expect(signoutRedirect.mock.calls[0]).toHaveLength(0);
+    expect(reload).toHaveBeenCalledTimes(1);
+  });
+
+  it("(ii) signoutRedirect rejeita: signout rejeita com o MESMO erro, sem reload e sem removeUser", async () => {
+    const err = new Error("descoberta fora");
+    const signoutRedirect = vi.fn().mockRejectedValue(err);
+    const removeUser = vi.fn();
+    mockOidcClientTsForSignout(signoutRedirect, removeUser);
+
+    const { signout } = await import("./userManager");
+
+    await expect(signout()).rejects.toBe(err);
+    expect(reload).not.toHaveBeenCalled();
+    expect(removeUser).not.toHaveBeenCalled();
+  });
+
+  it("(iii) reload só depois de signoutRedirect resolver", async () => {
+    let resolveRedirect: () => void = () => {};
+    const signoutRedirect = vi.fn().mockReturnValue(
+      new Promise<void>((resolve) => {
+        resolveRedirect = resolve;
+      }),
+    );
+    mockOidcClientTsForSignout(signoutRedirect, vi.fn());
+
+    const { signout } = await import("./userManager");
+    const pending = signout();
+    await Promise.resolve();
+
+    expect(reload).not.toHaveBeenCalled();
+
+    resolveRedirect();
+    await pending;
+    expect(reload).toHaveBeenCalledTimes(1);
   });
 });

@@ -42,8 +42,9 @@ resto serve a ela.
    ou para `/app`). O erro mostra uma mensagem e um botão que volta para `/`.
 3. **Área autenticada (`/app`).** Exibe `sub`, `name` e `email`; botão "Sair". Sem senha,
    sem formulário.
-4. **Sair.** Esquece os tokens e navega para `/`. Enquanto o `end_session_endpoint` não
-   existir, o texto avisa que a sessão no provedor de identidade continua ativa.
+4. **Sair.** Vai ao `end_session_endpoint` da descoberta, que encerra a sessão no IdP e volta
+   a `/` (ADR 0019). Se o logout não sai (descoberta fora ou sem o endpoint), os tokens já foram
+   esquecidos e a landing avisa que a sessão no provedor de identidade não foi encerrada.
 5. **Boot sem token** (reload ou primeira visita). Chama `restoreSession()` — ponto de
    encaixe do §7. Enquanto o mecanismo não é definido, retorna "sem sessão" e o
    comportamento é o da rota: `/` mostra a landing, `/app` redireciona ao login.
@@ -72,7 +73,7 @@ conta nesta fase.
 Pontos de encaixe (a SPA já deixa o lugar, o back-end preenche depois):
 
 - **Sessão no reload** — função `restoreSession()` (§7).
-- **Logout real** — se o discovery anunciar `end_session_endpoint`, "Sair" passa a usá-lo.
+- **Logout real** — preenchido: "Sair" usa o `end_session_endpoint` do discovery (ADR 0019).
 
 ---
 
@@ -83,6 +84,7 @@ Pontos de encaixe (a SPA já deixa o lugar, o back-end preenche depois):
 | `VITE_OIDC_ISSUER` | base do discovery (`{BASE_URL}/o`) |
 | `VITE_OIDC_CLIENT_ID` | `client_id` da `Application` |
 | `VITE_OIDC_REDIRECT_URI` | URL de `/callback` deste deploy |
+| `VITE_OIDC_POST_LOGOUT_REDIRECT_URI` | URL da landing `/` deste deploy, volta do "Sair" |
 
 `.env.example` commitado com valores do IdP fake; `.env.local` ignorado pelo git (I6).
 Lidas uma vez em `src/config.ts` e validadas com zod — falta de variável falha no boot,
@@ -178,7 +180,7 @@ anteriores não.
 
 - Gestão de conta — dentro da SPA ou linkada ao IdP (D2 emendada pela ADR 0012: sem
   páginas de conta nesta fase).
-- Logout real (adaptação de back-end).
+- Logout real (adaptação de back-end). Entregue depois, pela ADR 0019.
 - Estado global além de sessão; biblioteca de UI além de shadcn/Radix.
 
 ---

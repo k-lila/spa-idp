@@ -11,9 +11,9 @@ vi.mock("../auth/AuthContext", () => ({
 
 // "/app" real seria Area; aqui basta uma sentinela para provar navegação (ou a ausência dela)
 // sem arrastar Area, useUserinfo etc. para este arquivo.
-function renderLanding() {
+function renderLanding(state?: unknown) {
   return render(
-    <MemoryRouter initialEntries={["/"]}>
+    <MemoryRouter initialEntries={[{ pathname: "/", state }]}>
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/app" element={<p>APP</p>} />
@@ -101,5 +101,41 @@ describe("Landing", () => {
 
     screen.getByText("APP");
     expect(screen.queryByRole("button", { name: "Entrar" })).toBeNull();
+  });
+
+  // Só `signoutFailed === true` (booleano) liga o alerta do Sair que falhou (ADR 0019).
+  const SIGNOUT_ALERT = "Não foi possível encerrar a sessão no provedor de identidade.";
+
+  it("state { signoutFailed: true }: alerta do logout e botão Entrar", () => {
+    renderLanding({ signoutFailed: true });
+
+    screen.getByRole("alert");
+    screen.getByText(SIGNOUT_ALERT);
+    screen.getByRole("button", { name: "Entrar" });
+  });
+
+  it.each([
+    ["sem state", undefined],
+    ['{ signoutFailed: "true" } (string)', { signoutFailed: "true" }],
+    ["state null", null],
+  ])("%s: alerta do logout não aparece", (_nome, state) => {
+    renderLanding(state);
+
+    expect(screen.queryByText(SIGNOUT_ALERT)).toBeNull();
+    expect(screen.queryByRole("alert")).toBeNull();
+    screen.getByRole("button", { name: "Entrar" });
+  });
+
+  it("signoutFailed e signin rejeitando: os dois alertas convivem", async () => {
+    signin.mockRejectedValue(new Error("boom"));
+
+    renderLanding({ signoutFailed: true });
+
+    fireEvent.click(screen.getByRole("button", { name: "Entrar" }));
+    await flush();
+
+    expect(screen.getAllByRole("alert")).toHaveLength(2);
+    screen.getByText(SIGNOUT_ALERT);
+    screen.getByText("Não foi possível iniciar o login.");
   });
 });

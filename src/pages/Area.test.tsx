@@ -129,38 +129,44 @@ describe("Area", () => {
     expect(signin).not.toHaveBeenCalled();
   });
 
-  it("d) Sair: navigate('/') só depois de signout resolver, sem { replace: true }", async () => {
+  it("d) Sair chama signout 1x; se resolve, navigate não é chamado (quem navega é o IdP)", async () => {
     authGet.mockReturnValue(new Promise<Response>(() => {}));
-    // Deferida por macrotask (setTimeout), como em userManager.test.ts (a): se navigate() for
-    // chamado no mesmo tick do clique (sem esperar a promessa), a asserção síncrona abaixo cai.
-    signout.mockImplementation(
-      () =>
-        new Promise<void>((resolve) => {
-          setTimeout(resolve, 0);
-        }),
-    );
+    signout.mockResolvedValue(undefined);
 
     renderArea();
 
     fireEvent.click(screen.getByRole("button", { name: "Sair" }));
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
 
     expect(signout).toHaveBeenCalledTimes(1);
     expect(navigate).not.toHaveBeenCalled();
-
-    await new Promise<void>((resolve) => setTimeout(resolve, 0));
-
-    expect(navigate).toHaveBeenCalledTimes(1);
-    expect(navigate).toHaveBeenCalledWith("/");
   });
 
-  it("e) mostra o aviso AC-04 sobre o alcance do Sair", () => {
+  it("d2) Sair com signout rejeitando: console.error e navigate('/', { state: { signoutFailed: true } }) 1x, sem replace", async () => {
+    authGet.mockReturnValue(new Promise<Response>(() => {}));
+    const err = new Error("descoberta fora");
+    signout.mockRejectedValue(err);
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    renderArea();
+
+    fireEvent.click(screen.getByRole("button", { name: "Sair" }));
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+    expect(signout).toHaveBeenCalledTimes(1);
+    expect(consoleError).toHaveBeenCalledWith(err);
+    expect(navigate).toHaveBeenCalledTimes(1);
+    expect(navigate).toHaveBeenCalledWith("/", { state: { signoutFailed: true } });
+    consoleError.mockRestore();
+  });
+
+  it("e) sem o aviso antigo sobre o alcance do Sair; o botão Sair segue presente", () => {
     authGet.mockReturnValue(new Promise<Response>(() => {}));
 
     renderArea();
 
-    screen.getByText(
-      "Sair só esquece a sessão nesta aplicação. A sessão no provedor de identidade continua ativa: um novo Entrar pode acontecer sem pedir senha.",
-    );
+    expect(screen.queryByText(/Sair só esquece a sessão nesta aplicação/)).toBeNull();
+    screen.getByRole("button", { name: "Sair" });
   });
 
   it("f) claims com name vazio mostra o placeholder no id_token mesmo com userinfo pendente (AC-10)", () => {

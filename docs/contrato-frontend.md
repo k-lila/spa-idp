@@ -35,7 +35,15 @@ O IdP é um monólito Django com `django-oauth-toolkit` (DOT), em origem diferen
   `aud`, `exp`, `iat`, `nonce`; **não** emite `email_verified`; publica uma chave RSA com `kid`
   em `jwks_uri`;
 - responde `GET /o/userinfo/` com as mesmas claims; token inválido → **401**;
-- **não** publica `end_session_endpoint` (logout pela RP desligado, por decisão);
+- publica `end_session_endpoint` (logout iniciado pela RP, ADR 0029 do `nova_api`), hoje o
+  issuer seguido de `/logout/`, que a SPA lê da descoberta e nunca fixa (I5). Com
+  `id_token_hint` vivo do usuário da sessão, revoga os tokens dele **só na `Application` da
+  SPA**, encerra a sessão sem pedir confirmação e redireciona só a um `post_logout_redirect_uri`
+  cadastrado. Pede confirmação quando o hint falta, é de outra conta ou já não tem linha no
+  banco (por exemplo, revogado por um logout em outra aba). A SPA só alerta a falha quando
+  `signoutRedirect()` rejeita dentro da página (descoberta sem o endpoint); o que falha depois
+  de a página sair para o IdP ela não enxerga (ADR 0019). A ordem de implantação é IdP
+  primeiro, depois a SPA;
 - emite `refresh_token` que não expira e é rotacionado a cada uso — a SPA não o usa;
 - `access_token` e `id_token` valem 10 h; `code` vale 60 s;
 - mantém sessão própria por cookie `SameSite=Lax`: uma navegação top-level a `/o/authorize/`
@@ -104,7 +112,7 @@ Verificado no código da SPA e é exatamente o que o IdP espera:
 | `automaticSilentRenew`, `monitorSession`, `loadUserInfo` = `false` | sem iframe, sem refresh | idem |
 | Schema de claims: `sub` ≥ 1, `name` string (vazio ok), `email` ≥ 1, extras descartadas | ADR 0007 | `src/auth/claims.ts` |
 | `userinfo`: `GET` com `Bearer` no endpoint da descoberta; 401 → re-auth uma vez por aba; `sub` conferido com o do `id_token` | ADRs 0008, 0009 | `src/api/http.ts`, `src/api/userinfo.ts` |
-| Logout local com aviso de que a sessão no IdP continua | ADR 0010 | `src/pages/Area.tsx` |
+| "Sair" por `signoutRedirect()` sem `state` ao `end_session_endpoint` da descoberta; falha → landing com alerta | ADR 0019 | `userManager.ts`, `src/pages/Area.tsx`, `src/pages/Landing.tsx` |
 | Deep-link no `state`, aceito só se for caminho da própria origem | ADR 0011 | `userManager.ts` |
 | Erro no callback (`error` sem `code`, `state` inválido, rede) → estado de erro com volta a `/` | plano §2 | `src/pages/Callback.tsx` |
 
@@ -112,12 +120,17 @@ Verificado no código da SPA e é exatamente o que o IdP espera:
 
 ## 4. O que o IdP precisa receber deste projeto
 
-Por ambiente, os valores **literais** (esquema, host, porta, path, sem barra final):
+Por ambiente, os valores **literais** (esquema, host, porta, path; barra final só onde aparece):
 
 | Valor | Produção | Desenvolvimento |
 | --- | --- | --- |
 | Origem da SPA (para o CORS do IdP) | `https://<spa>` | `http://localhost:5173` |
 | `redirect_uri` (para a `Application` do IdP) | `https://<spa>/callback` | `http://localhost:5173/callback` |
+| `post_logout_redirect_uri` (para a `Application` do IdP) | `https://<spa>/` | `http://localhost:5173/` |
+
+O `post_logout_redirect_uri` leva a barra final, ao contrário da origem: o cadastro em
+`post_logout_redirect_uris` e `VITE_OIDC_POST_LOGOUT_REDIRECT_URI` têm de ser idênticos, byte a
+byte.
 
 E, se a SPA quiser autenticar em preview da Vercel: um **alias estável** (branch domain ou
 domínio próprio de preview), que ganha uma terceira `Application` no IdP. Previews sem alias
@@ -233,6 +246,7 @@ Caddy no navegador).
 VITE_OIDC_ISSUER=http://localhost:8000/o
 VITE_OIDC_CLIENT_ID=<client_id da Application de dev, entregue pelo IdP>
 VITE_OIDC_REDIRECT_URI=http://localhost:5173/callback
+VITE_OIDC_POST_LOGOUT_REDIRECT_URI=http://localhost:5173/
 ```
 
 O fake continua disponível (`npm run idp`) para os e2e automatizados e para trabalhar sem o
@@ -242,10 +256,15 @@ apontar para o real.
 ### 6.2 Produção: Vercel
 
 - Variáveis **no painel da Vercel, por ambiente**. Production: issuer e `client_id` de produção,
-  `VITE_OIDC_REDIRECT_URI=https://<spa>/callback`. Preview: nada (o build passa, e a
+  `VITE_OIDC_REDIRECT_URI=https://<spa>/callback`,
+  `VITE_OIDC_POST_LOGOUT_REDIRECT_URI=https://<spa>/`. Preview: nada (o build passa, e a
   aplicação lança no boot em `config.ts`, ADR 0005, o que é desejável) ou os valores do cliente de preview, se houver alias. Development: os do IdP
   local. Nunca o mesmo valor nos três. Nada commitado (I6): um `.env.production` no
   repositório seria carregado também pelos previews.
+- `VITE_OIDC_POST_LOGOUT_REDIRECT_URI` idêntica, byte a byte, ao `post_logout_redirect_uris` da
+  `Application`, **com a barra final** (`https://<spa>/`), ao contrário de `SPA_URL`, CORS e
+  origem, que vão sem barra. O boot não detecta a diferença (`new URL` aceita as duas formas); o
+  erro só aparece como 400 do IdP no primeiro "Sair".
 - Node 22 no build da Vercel. Ela não lê `.nvmrc`, mas respeita `engines.node` do
   `package.json`, que hoje é `>=22.13 <23`; conferir no log do primeiro build que a versão usada
   é a 22, e manter a configuração do projeto na Vercel coerente com ela.
@@ -270,7 +289,7 @@ CORS, `Application`, `skip_authorization`):
 4. `id_token` adulterado, ou `VITE_OIDC_ISSUER` com barra final: o callback cai no estado de
    erro (prova de que a verificação da seção 5.1 está ativa).
 5. Deep-link: abrir `/app?x=1` sem sessão → login → volta a `/app?x=1`.
-6. "Sair" → `/`; "Entrar" de novo volta sem senha (SSO do IdP), com o aviso na tela.
+6. "Sair" → IdP → `/`, sem confirmação; "Entrar" de novo pede senha.
 7. Com o IdP derrubado, "Entrar" mostra "Não foi possível iniciar o login" em tempo finito.
 
 Em produção, com a SPA publicada e o IdP na AWS: o item 1 fecha em `https://<spa>`, e
