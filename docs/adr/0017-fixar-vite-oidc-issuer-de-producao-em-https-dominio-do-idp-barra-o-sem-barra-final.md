@@ -6,13 +6,13 @@ Aceito — 2026-09-17
 
 ## Contexto
 
-O IdP (Identity Provider) fixou o issuer em `{BASE_URL}/o` (`nova_api/docs/adr/0007-fixar-o-issuer-do-idp-em-base-url-barra-o.md`)
-e pediu confirmação explícita antes de a primeira relying party (RP) integrar — depois disso a
-string é permanente para efeitos práticos. `nova_api/docs/integracao-rp.md` §2 diz que a forma está
-decidida e o host é provisório, e que duas propriedades valem em qualquer implantação: termina em
-`/o`, e o esquema é `https` se e somente se o IdP está atrás do proxy de terminação TLS
-(Transport Layer Security). `nova_api/docs/contrato-backend.md` §3 lista o issuer entre os valores
-que a SPA recebe, e §4.1 fixa o host de produção num domínio próprio (`idp.<seu-dominio>`), nunca
+O IdP (Identity Provider) fixou o issuer em `{BASE_URL}/o` (ADR 0007 do IdP) e pediu confirmação
+explícita antes de a primeira relying party (RP) integrar — depois disso a string é permanente
+para efeitos práticos. O `docs/integracao-rp.md` do IdP, §2, diz que a forma está decidida e o
+host é provisório, e que duas propriedades valem em qualquer implantação: termina em `/o`, e o
+esquema é `https` se e somente se o IdP está atrás do proxy de terminação TLS (Transport Layer
+Security). O `docs/contrato-backend.md` do IdP, §3, lista o issuer entre os valores que a SPA
+recebe, e §4.1 fixa o host de produção num domínio próprio (`idp.<seu-dominio>`), nunca
 num nome atribuído pela AWS.
 
 Do lado da SPA o issuer é um literal em três papéis ao mesmo tempo: é o `authority` do

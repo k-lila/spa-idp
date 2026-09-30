@@ -8,7 +8,7 @@ Aceito — 2026-09-29
 
 Pela ADR 0010, "Sair" só esquecia os tokens em memória (`removeUser()`). A sessão Django do IdP
 seguia viva, o "Entrar" seguinte voltava sem senha pelo SSO e o `access_token` valia até expirar
-(10 h). A ADR 0029 do `nova_api` liga o logout iniciado pela RP (_OpenID Connect RP-Initiated
+(10 h). A ADR 0029 do IdP liga o logout iniciado pela RP (_OpenID Connect RP-Initiated
 Logout 1.0_). A descoberta passa a publicar `end_session_endpoint`. Com `id_token_hint` vivo do
 usuário da sessão, o IdP não pede confirmação, revoga os tokens do usuário **só na Application que
 pediu**, encerra a sessão e redireciona só a um `post_logout_redirect_uri` cadastrado. Pede
@@ -52,8 +52,7 @@ valor é a landing `/`, idêntico ao cadastrado no IdP.
   "`rpInitiatedLogout` desligado" da ADR 0004. O princípio dela, o fake espelhar o contrato que a
   SPA consome, é justamente o que exige a mudança.
 
-Contraparte: ADR 0029 do `nova_api`
-([`../../../nova_api/docs/adr/0029-ligar-o-logout-iniciado-pela-rp-com-revogacao-restrita-a-application.md`](../../../nova_api/docs/adr/0029-ligar-o-logout-iniciado-pela-rp-com-revogacao-restrita-a-application.md)).
+Contraparte: ADR 0029 do IdP.
 
 ## Consequências
 

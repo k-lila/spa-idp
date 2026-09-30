@@ -15,7 +15,7 @@ token forjado, de outro issuer, para outro `client_id`, com `alg` trocado ou exp
 renderizado. O plano §7.1 deixou duas opções — acrescentar `jose` ou relaxar I4 por ADR — e o
 `contrato-frontend.md` §5.1 recomendou a primeira.
 
-O IdP publica o necessário (`nova_api/docs/integracao-rp.md` §7): `id_token` RS256 com `kid` no
+O IdP publica o necessário (`docs/integracao-rp.md` do IdP, §7): `id_token` RS256 com `kid` no
 cabeçalho casando com a única chave RSA do `jwks_uri` anunciado na descoberta; `iss` igual ao
 issuer por igualdade exata de string (sem normalizar barra final); `aud` contendo o `client_id`;
 `exp`. Na descoberta e no `jwks_uri` o próprio `django-oauth-toolkit` emite
@@ -101,7 +101,7 @@ Negativas:
   por até 1–2 h. Saídas possíveis, a decidir em tarefa própria: (a) na SPA, `fetch` próprio
   com `cache: "no-store"` pelo símbolo `customFetch` do `jose`; (b) no IdP, procedimento de
   rotação que publique a chave nova em `OIDC_RSA_PRIVATE_KEYS_INACTIVE` por pelo menos
-  `OIDC_JWKS_MAX_AGE_SECONDS` antes de ativá-la (nota cruzada para o `nova_api`).
+  `OIDC_JWKS_MAX_AGE_SECONDS` antes de ativá-la (nota cruzada para o IdP).
 - A janela em que `AuthProvider` está `authenticated` com identidade ainda não verificada passa
   de uma microtask a uma requisição de rede. Continua inofensiva pelo mesmo motivo da ADR 0007
   (em `/callback` só `Callback` está montada; `removeUser()` emite `userUnloaded`), mas cresce. A

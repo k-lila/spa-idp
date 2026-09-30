@@ -5,17 +5,16 @@
 Proposto — 2026-09-24
 
 Contraparte da ADR (Architecture Decision Record) 0027 do provedor de identidade (IdP, de
-_Identity Provider_) `nova_api`, também proposta
-(`../../../nova_api/docs/adr/0027-servir-o-idp-de-producao-da-maquina-local-pelo-cloudflare-tunnel-sem-porta-de-entrada.md`).
+_Identity Provider_), também proposta.
 As duas passam a Aceito juntas, depois do ensaio descrito no passo 4 de
-`nova_api/docs/plano-implantacao.md`. Esta ADR não emenda nenhuma outra: a ADR 0017 fixou a forma
+`docs/plano-implantacao.md` do IdP. Esta ADR não emenda nenhuma outra: a ADR 0017 fixou a forma
 do issuer, e não o lugar em que o IdP roda, e a menção à AWS (Amazon Web Services) nas ADRs 0015,
 0016 e 0017 fica como registro do destino da época.
 
 ## Contexto
 
-Esta aplicação de página única (SPA, de _Single-Page Application_) é a relying party (RP) do IdP
-`nova_api`. As ADRs 0016 e 0017 e `docs/contrato-frontend.md` supõem o IdP de produção numa
+Esta aplicação de página única (SPA, de _Single-Page Application_) é a relying party (RP) do IdP.
+As ADRs 0016 e 0017 e `docs/contrato-frontend.md` supõem o IdP de produção numa
 instância da AWS. A ADR 0027 do IdP troca esse destino pela máquina do dono do projeto, publicada
 por um túnel nomeado da Cloudflare sob o domínio próprio que a ADR 0025 do IdP exige, numa zona
 da Cloudflare só do IdP. A cadeia passa a ser navegador → borda da Cloudflare → túnel →
@@ -25,8 +24,7 @@ O que a SPA consome do IdP não depende de onde ele roda:
 
 - `VITE_OIDC_ISSUER` é o `authority` do `UserManager` (`src/auth/userManager.ts`) e o `issuer` de
   `verifyIdToken` (`src/auth/idToken.ts`), comparado byte a byte com a claim `iss` (ADRs 0013 e
-  0017). A forma `https://<PUBLIC_HOST>/o` está congelada pela ADR 0025 do IdP
-  (`../../../nova_api/docs/adr/0025-congelar-o-issuer-de-producao-na-forma-https-public-host-barra-o.md`),
+  0017). A forma `https://<PUBLIC_HOST>/o` está congelada pela ADR 0025 do IdP,
   e a 0027 a mantém: `PUBLIC_HOST` é o nome do domínio próprio publicado pela borda.
 - Os endpoints vêm da descoberta (I5). O JWKS (JSON Web Key Set) vem do `jwks_uri`, buscado a cada
   login. O reload de `createRemoteJWKSet` por `kid` desconhecido é inerte aqui (ADR 0013): depois
@@ -82,9 +80,8 @@ SPA.
   0013 nomeia, em tarefa própria. Trocar o nome, e não o lugar, continua exigindo ADR nova nos dois
   lados, valor novo no painel e redeploy (ADR 0017).
 
-Contraparte: a ADR 0027 do IdP
-(`../../../nova_api/docs/adr/0027-servir-o-idp-de-producao-da-maquina-local-pelo-cloudflare-tunnel-sem-porta-de-entrada.md`)
-e, por ela, a ADR 0025 do IdP. Nenhuma linha de código muda nos dois lados.
+Contraparte: a ADR 0027 do IdP e, por ela, a ADR 0025 do IdP. Nenhuma linha de código muda
+nos dois lados.
 
 ## Consequências
 

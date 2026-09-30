@@ -6,7 +6,7 @@ Aceito — 2026-09-17
 
 ## Contexto
 
-A SPA é a relying party (RP) do IdP (Identity Provider) `nova_api` e vive em origem diferente
+A SPA é a relying party (RP) do IdP (Identity Provider) e vive em origem diferente
 dele: Vercel de um lado, AWS do outro (`contrato-frontend.md` §1 e §6.2). Até aqui o repositório
 não tem nada de deploy — nem `vercel.json`, nem `.github/` — e o "typecheck/lint/test antes do
 deploy" de `docs/spa-nucleo.md` §4 existe só como scripts do `package.json`.
@@ -25,7 +25,7 @@ Cinco fatos moldam a publicação:
   inclusive previews.
 - Cada preview da Vercel tem origem própria em `*.vercel.app`, domínio compartilhado por todos os
   usuários da plataforma. O IdP compara a origem do CORS (Cross-Origin Resource Sharing) e a
-  `redirect_uri` por igualdade exata (`nova_api/docs/contrato-backend.md` §5.1 e §5.2); a
+  `redirect_uri` por igualdade exata (`docs/contrato-backend.md` do IdP, §5.1 e §5.2); a
   allowlist governa `/o/token/` e `/o/userinfo/` — descoberta e JWKS saem com `*` do próprio
   `django-oauth-toolkit` (ADR 0013).
 - A Vercel não lê `.nvmrc`; lê `engines.node` do `package.json` e usa a maior versão disponível

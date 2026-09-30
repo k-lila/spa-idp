@@ -12,9 +12,9 @@ dispara o redirect ao IdP (I8, ADR 0010) e o IdP devolve por SSO. O plano listou
 silent auth por `prompt=none` e renovação via back-end com cookie — e deixou a escolha ao
 back-end. O `contrato-frontend.md` §5.4 recomenda manter o desenho atual e registrá-lo por ADR.
 
-Fatos do IdP que pesam (`contrato-frontend.md` §1; `nova_api/docs/contrato-backend.md` §2, §5.3,
-§5.4): o cookie de sessão viaja na navegação top-level cross-site porque é `SameSite=Lax` — por
-default do Django, não por declaração: `SESSION_COOKIE_SAMESITE`, `SESSION_COOKIE_AGE` (14 dias,
+Fatos do IdP que pesam (`contrato-frontend.md` §1; `docs/contrato-backend.md` do IdP, §2,
+§5.3, §5.4): o cookie de sessão viaja na navegação top-level cross-site porque é `SameSite=Lax` —
+por default do Django, não por declaração: `SESSION_COOKIE_SAMESITE`, `SESSION_COOKIE_AGE` (14 dias,
 não deslizantes) e `SESSION_EXPIRE_AT_BROWSER_CLOSE` não estão no `settings.py` nem em teste; o
 DOT devolve um `refresh_token` em toda troca de `code`, e ele não expira
 (`REFRESH_TOKEN_EXPIRE_SECONDS` ausente), é rotacionado a cada uso e não é revogado ao desativar

@@ -1,8 +1,8 @@
 # Contrato com o IdP
 
 O que a SPA, como relying party (RP) OIDC (OpenID Connect), assume do provedor de identidade
-(IdP) `nova_api` e o que ela lhe entrega. A fonte canônica do lado do IdP é
-`nova_api/docs/integracao-rp.md`; este documento diz como a SPA a cumpre e onde, no código, cada
+(IdP) e o que ela lhe entrega. A fonte canônica do lado do IdP é `docs/integracao-rp.md` do
+IdP; este documento diz como a SPA a cumpre e onde, no código, cada
 cláusula vive. Mudar qualquer item daqui é mudar os dois projetos (§10).
 
 ---

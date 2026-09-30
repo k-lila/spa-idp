@@ -13,9 +13,9 @@ no boot por `src/config.ts` (ADR 0005). Os caminhos finais ficaram como decisão
 e o `.env.example`, o `playwright.config.ts` e os fakes de config dos testes carregam um
 placeholder que o fake não serve (ADR 0004, consequência negativa: 404 em dev).
 
-O IdP decidiu não ter cadastro nem edição de perfil nesta fase (`nova_api/docs/contrato-backend.md`
-§5.4 e §8; ADR do IdP "sem páginas de conta nesta fase", pendente lá): contas continuam criadas
-pelo admin, e cadastro público num IdP exposto exige antes validadores de senha, limite de taxa e
+O IdP decidiu não ter cadastro nem edição de perfil nesta fase (`docs/contrato-backend.md`
+do IdP, §5.4 e §8; ADR do IdP "sem páginas de conta nesta fase", pendente lá): contas continuam
+criadas pelo admin, e cadastro público num IdP exposto exige antes validadores de senha, limite de taxa e
 verificação de e-mail. O `contrato-frontend.md` §5.3 pede à SPA que retire a dependência.
 
 Do lado da SPA: nenhum módulo de produção lê `config.idpAccountUrl`; os links nunca foram criados

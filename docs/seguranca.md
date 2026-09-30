@@ -1,8 +1,8 @@
 # Segurança e modelo de ameaças
 
 O que a SPA protege, contra quem, e o que ficou em aberto. A SPA é uma relying party (RP) OIDC
-(OpenID Connect) do provedor de identidade (IdP) `nova_api`; o contrato entre os dois está em
-`docs/contrato-idp.md`, e a segurança do lado do IdP, em `nova_api/docs/seguranca.md`.
+(OpenID Connect) do provedor de identidade (IdP); o contrato entre os dois está em
+`docs/contrato-idp.md`, e a segurança do lado do IdP, em `docs/seguranca.md` do IdP.
 
 ---
 
@@ -115,4 +115,4 @@ antes dela. Resolver depende do IdP, com ADR nos dois lados.
 ## §5. Fora do escopo da SPA
 
 Custódia da chave privada, acesso ao admin, trilha de auditoria, revogação por desativação de
-conta e o risco da máquina que hospeda o IdP ficam em `nova_api/docs/seguranca.md`.
+conta e o risco da máquina que hospeda o IdP ficam em `docs/seguranca.md` do IdP.

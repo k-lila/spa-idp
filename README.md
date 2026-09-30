@@ -1,4 +1,4 @@
-# nova_api_SPA
+# SPA
 
 SPA React + TypeScript que atua como Relying Party OIDC do `monolito-idp`.
 

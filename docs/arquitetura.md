@@ -1,7 +1,7 @@
 # Arquitetura da SPA
 
 Mapa do projeto e desenho da SPA como relying party (RP) OIDC (OpenID Connect) do provedor de
-identidade (IdP) `nova_api`. As regras que o desenho cumpre (invariantes I1–I8) estão em
+identidade (IdP). As regras que o desenho cumpre (invariantes I1–I8) estão em
 `docs/spa-nucleo.md`; o porquê de cada escolha, nas ADRs (Architecture Decision Records) de
 `docs/adr/`.
 
@@ -10,7 +10,7 @@ identidade (IdP) `nova_api`. As regras que o desenho cumpre (invariantes I1–I8
 ## Árvore de arquivos
 
 ```
-nova_api_SPA/
+./
 ├── src/
 │   ├── main.tsx              # boot: valida config, monta Query → Auth → Router
 │   ├── config.ts             # lê e valida as VITE_* (ADR 0005)
@@ -70,7 +70,7 @@ acontece no navegador, contra o IdP em outra origem (Cloudflare Tunnel em produ�
                  │       └─ fetch (CORS)▶ /o/userinfo/       Bearer access_token
                  └────────────────────────────────────────────────────────────┘
                                           │
-                                  IdP nova_api (https://<idp>/o)
+                                  IdP (https://<idp>/o)
 ```
 
 Duas naturezas de chamada:
