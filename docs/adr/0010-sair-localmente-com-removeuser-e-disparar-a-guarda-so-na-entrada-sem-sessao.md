@@ -4,10 +4,12 @@
 
 Substituído por ADR-0019 — 2026-09-29
 
+Revisão — 2026-09-29: referências a documentos de trabalho suprimidas; decisão inalterada (ver índice).
+
 ## Contexto
 
-O plano (§2.4) define "Sair" como esquecer os tokens e navegar para `/`, com aviso de que a sessão
-no IdP continua viva enquanto não houver `end_session_endpoint` (§9). A ADR 0006 previu o mecanismo
+O plano define "Sair" como esquecer os tokens e navegar para `/`, com aviso de que a sessão
+no IdP continua viva enquanto não houver `end_session_endpoint`. A ADR 0006 previu o mecanismo
 (`removeUser()` → `userUnloaded`); a ADR 0009 exige que o cache do `userinfo` morra com os tokens
 (`queryClient.clear()`, provider acima do `AuthProvider`); a TASK-004 fixou que o handler de
 `userUnloaded` só atualiza estado, porque `completeSignin()` também chama `removeUser()` ao rejeitar
@@ -48,9 +50,9 @@ Positivas:
 
 Negativas:
 
-- "Perda de sessão com a guarda montada" vira `null` silencioso: se §7.2 (renovação silenciosa) ou
+- "Perda de sessão com a guarda montada" vira `null` silencioso: se a renovação silenciosa ou
   outro mecanismo passar a chamar `removeUser()` sem navegar, `/app` fica em branco. Quem remove a
-  sessão fora de "Sair" precisa navegar ou emitir estado de erro; a ADR de §7.2 deve tratar isso.
+  sessão fora de "Sair" precisa navegar ou emitir estado de erro; a ADR da sessão no reload deve tratar isso.
 - A distinção "entrada × perda" fica num `useRef` dentro de `RequireAuth`, não no `AuthState`; é
   local e invisível para quem lê só o contexto.
 - Logout é só local: "Voltar" do navegador depois de sair remonta a guarda, vai ao IdP e o SSO
@@ -69,5 +71,5 @@ Negativas:
 - **Navegar no handler de `userUnloaded`** — desmonta `Callback` na rejeição de claims e apaga o
   erro; vetado pela TASK-004. Descartada.
 - **`window.location.assign("/")` (reload como logout)** — sem corrida alguma, mas não exercita o
-  modelo de estado (tokens somem por acidente, não por decisão), e com §7.2 um reload passa a
+  modelo de estado (tokens somem por acidente, não por decisão), e, decidida a sessão no reload, um reload passa a
   restaurar a sessão, o que faria "Sair" deixar de sair. Descartada.

@@ -4,6 +4,8 @@
 
 Aceito — 2026-09-14
 
+Revisão — 2026-09-29: referências a documentos de trabalho suprimidas; decisão inalterada (ver índice).
+
 ## Contexto
 
 O núcleo (`docs/spa-nucleo.md`, §3) fixa React Router para rota de callback, guarda de
@@ -20,7 +22,7 @@ rota por redirect (I8) e deep-link. O React Router v7 oferece três modos:
 A SPA é uma Relying Party OIDC com tokens **exclusivamente em memória** (I3) e deploy
 estático na Vercel. Qualquer camada servidor no front (SSR, loaders executando no servidor)
 cria a tentação de mover tokens ou sessão para fora do browser e muda o modelo de deploy.
-Ao mesmo tempo, o plano (§2) prevê estados de erro no callback e um `NotFound`, e o
+Ao mesmo tempo, o plano prevê estados de erro no callback e um `NotFound`, e o
 núcleo (§4) pede Error Boundary; `errorElement` por rota entrega isso sem componente
 extra. O pacote `react-router-dom` na v7 é só um reexport de `react-router`.
 
@@ -31,7 +33,7 @@ Vamos usar o pacote **`react-router`** (v7) **como biblioteca**, em **modo data 
 `<RouterProvider>` em `src/main.tsx`. Não usaremos `@react-router/dev`, framework mode
 nem SSR. `react-router-dom` não entra nas dependências. Loaders e actions ficam
 permitidos, mas nada de auth passa por eles: a guarda de rota é componente
-(`RequireAuth`, I8), lendo o contexto de auth, como o plano (§5) descreve.
+(`RequireAuth`, I8), lendo o contexto de auth, como o plano descreve.
 
 ## Consequências
 

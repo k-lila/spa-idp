@@ -4,10 +4,12 @@
 
 Aceito — 2026-09-17
 
+Revisão — 2026-09-29: referências a documentos de trabalho suprimidas; decisão inalterada (ver índice).
+
 ## Contexto
 
 A SPA é a relying party (RP) do IdP (Identity Provider) e vive em origem diferente
-dele: Vercel de um lado, AWS do outro (`contrato-frontend.md` §1 e §6.2). Até aqui o repositório
+dele: Vercel de um lado, AWS do outro. Até aqui o repositório
 não tem nada de deploy — nem `vercel.json`, nem `.github/` — e o "typecheck/lint/test antes do
 deploy" de `docs/spa-nucleo.md` §4 existe só como scripts do `package.json`.
 
@@ -25,13 +27,13 @@ Cinco fatos moldam a publicação:
   inclusive previews.
 - Cada preview da Vercel tem origem própria em `*.vercel.app`, domínio compartilhado por todos os
   usuários da plataforma. O IdP compara a origem do CORS (Cross-Origin Resource Sharing) e a
-  `redirect_uri` por igualdade exata (`docs/contrato-backend.md` do IdP, §5.1 e §5.2); a
+  `redirect_uri` por igualdade exata; a
   allowlist governa `/o/token/` e `/o/userinfo/` — descoberta e JWKS saem com `*` do próprio
   `django-oauth-toolkit` (ADR 0013).
 - A Vercel não lê `.nvmrc`; lê `engines.node` do `package.json` e usa a maior versão disponível
   que satisfaça o range. Com `>=22.13`, o build pode correr em Node 24, que nenhum teste
   exercitou (`.claude/memory/decisions.md`, TASK-001). A ADR 0001 fixa Node 22 LTS.
-- O contrato §6.2 pede `typecheck`, `lint` e `test` como gate do deploy de produção, e produção
+- O contrato pede `typecheck`, `lint` e `test` como gate do deploy de produção, e produção
   só a partir da `main`. Nenhum dos dois se expressa no repositório: a integração Git da Vercel
   publica a cada push, e o gate vive na branch protection do GitHub e na branch de produção do
   projeto Vercel. O e2e (Playwright) baixa o Chromium a cada execução e sobe fake e Vite; o
@@ -44,8 +46,8 @@ Vamos publicar a SPA na Vercel com quatro peças no repositório e três fora de
 No repositório:
 
 1. `vercel.json` com rewrite universal para `/index.html` e, em toda rota, os cabeçalhos
-   `Referrer-Policy: no-referrer` e `X-Content-Type-Options: nosniff` — o literal de
-   `contrato-frontend.md` §5.2. Nada além disso: sem `routes`, sem `builds`, sem `Cache-Control`.
+   `Referrer-Policy: no-referrer` e `X-Content-Type-Options: nosniff` — o literal do
+   contrato. Nada além disso: sem `routes`, sem `builds`, sem `Cache-Control`.
 2. `engines.node` em `package.json` apertado para `>=22.13 <23`: é o campo que a Vercel lê, e o
    teto exclui o 24. `.nvmrc` continua `22`. A ADR 0001 segue valendo — Node 22 LTS; só a forma
    do range muda.
@@ -72,8 +74,8 @@ Fora do repositório — configuração externa, registrada aqui porque não há
   O workflow dá o sinal; o gate é ligado no painel e só vale se o trabalho passar por PR. O
   campo "Node.js Version" do painel fica em 22.x, redundante com `engines`.
 
-Contraparte: `contrato-backend.md` §5.2 (CORS por origem exata; previews fora) e a ADR do IdP
-"CORS por origem exata; previews da Vercel fora", devida lá (tabela §8), que pode citar esta por
+Contraparte: a ADR do IdP
+"CORS por origem exata; previews da Vercel fora", devida lá, que pode citar esta por
 número. Nenhuma mudança de código, `Application` ou CORS no IdP decorre daqui.
 `Referrer-Policy: no-referrer` suprime o `Referer` nos `fetch` a `/o/token/` e `/o/userinfo/`, e
 nada no IdP depende dele: o token endpoint é `csrf_exempt` e o `userinfo` é `GET`; o cabeçalho
@@ -94,9 +96,9 @@ Positivas:
 Negativas:
 
 - Metade da configuração de deploy vive fora do git (painel da Vercel, branch protection) e pode
-  divergir sem diff; a única conferência é o passo 6 de `docs/implementacao-contrato.md`.
-- Previews inúteis para testar login; toda verificação contra o IdP real é local (passo 5) ou em
-  produção (passo 6).
+  divergir sem diff; a única conferência é a verificação de produção.
+- Previews inúteis para testar login; toda verificação contra o IdP real é local ou em
+  produção.
 - e2e fora do CI: uma regressão que só o redirect real revela chega à `main` se ninguém rodou
   `npm run test:e2e` antes do PR.
 - `engines <23` faz `npm install` avisar `EBADENGINE` em máquinas com Node 23 ou 24 (aviso, não
@@ -104,10 +106,9 @@ Negativas:
 - Levar Node 22 para 24 (manutenção em outubro de 2026, ADR 0001) toca `engines`, `.nvmrc` e o
   painel.
 - Nenhum cabeçalho além dos dois: CSP fica fora; o `Cache-Control` do documento é o default da
-  Vercel, a conferir no passo 6 pelo bfcache (ADR 0010).
-- `contrato-frontend.md` §6.2 e `implementacao-contrato.md` passo 4b dizem que "a build falha"
-  sem variáveis; a build passa e a aplicação lança no boot. O efeito é o mesmo; a frase fica
-  imprecisa até a próxima edição do contrato.
+  Vercel, a conferir em produção pelo bfcache (ADR 0010).
+- O contrato e o roteiro de implementação da época dizem que "a build falha"
+  sem variáveis; a build passa e a aplicação lança no boot. O efeito é o mesmo.
 - O gate de CI é condicional ao fluxo: enquanto os commits forem empurrados direto à `main`, um
   `typecheck` vermelho vai ao ar antes de o CI reportar. Trabalhar por PR é o que ativa a
   barreira; deploy pelo próprio workflow (`vercel deploy --prebuilt --prod` após os testes) foi

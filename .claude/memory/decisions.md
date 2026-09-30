@@ -40,7 +40,7 @@
 | 2026-09-17 | Fixar `requestTimeoutInSeconds` em 15 s no `UserManager` | docs/adr/0015-fixar-requesttimeoutinseconds-em-15-s-no-usermanager.md |
 | 2026-09-17 | Publicar a SPA na Vercel com `vercel.json`, variáveis por ambiente no painel e previews sem IdP de produção | docs/adr/0016-publicar-na-vercel-com-vercel-json-variaveis-por-ambiente-e-previews-sem-idp-de-producao.md |
 | 2026-09-17 | Fixar `VITE_OIDC_ISSUER` de produção na forma `https://<dominio-do-idp>/o`, sem barra final | docs/adr/0017-fixar-vite-oidc-issuer-de-producao-em-https-dominio-do-idp-barra-o-sem-barra-final.md |
-| 2026-09-24 | Aceitar o IdP de produção servido pelo Cloudflare Tunnel com o contrato inalterado (proposta; contraparte da ADR 0027 do IdP) | docs/adr/0018-aceitar-o-idp-de-producao-servido-pelo-cloudflare-tunnel-com-o-contrato-inalterado.md |
+| 2026-09-29 | Aceitar o IdP de produção servido pelo Cloudflare Tunnel com o contrato inalterado (proposta em 2026-09-24; contraparte da ADR 0027 do IdP, aceita em 2026-09-28) | docs/adr/0018-aceitar-o-idp-de-producao-servido-pelo-cloudflare-tunnel-com-o-contrato-inalterado.md |
 | 2026-09-29 | Sair por logout iniciado pela RP com `signoutRedirect()` sem `state` (substitui a 0010; emenda a cláusula de logout da 0004; contraparte da ADR 0029 do IdP) | docs/adr/0019-sair-por-logout-iniciado-pela-rp-com-signoutredirect-sem-state.md |
 
 ---
@@ -288,4 +288,31 @@ memória — é sedimento.
     senha; `access_token` anterior 401 em `/o/userinfo/`; raiz do IdP sem sessão. Exige
     `post_logout_redirect_uris` = `http://localhost:5173/` na Application de dev e
     `VITE_OIDC_POST_LOGOUT_REDIRECT_URI` no `.env.local` (já feito). Em produção, depois do deploy.
+- **Tipo:** decisão.
+
+## [2026-09-30] TASK-013 · Publicar a SPA em produção na Vercel — encerrada como obsoleta
+
+- **Decisão:** encerrada por decisão do usuário, sem cumprir os blocos B–D. Os critérios de
+  fechamento (AC-12 e AC-14) marcavam checklists de documentos de trabalho que não existem mais
+  (plano de pré-implementação, contrato de front-end, roteiro de implementação). O status quo vale
+  como aceito: a SPA está em produção em `https://spa-idp.vercel.app`, integrada ao IdP servido
+  pelo Cloudflare Tunnel (ADR 0018), e toda ADR da SPA está aceita (0010 substituída pela 0019). A
+  verificação em produção (AC-08 a AC-10) não foi registrada por esta tarefa; AC-02 (Node 22.x no
+  painel) e AC-04 (branch protection) também não foram confirmados. Nenhum código nem arquivo de
+  `docs/` tocado.
+- **ADR:** nenhuma nova. A 0018 passou a Aceito em 2026-09-29, na revisão das ADRs (linha do
+  índice atualizada).
+- **Tech-debt / melhorias:**
+  - Aceito como status quo (senso-critico TASK-011, BAIXO A3): a origem é o alias
+    `https://spa-idp.vercel.app`; URLs de deployment e aliases de branch não autenticam
+    (`redirect_uri` divergente) e nada se configura em Domains. Renomear o projeto Vercel muda a
+    origem e exige nova entrega ao IdP.
+  - Aceito como status quo (senso-critico TASK-011, BAIXO A4): o ambiente Development do painel não
+    é cadastrado; `vercel env pull` sobrescreveria o `.env.local`.
+  - Aceito, registrado (orquestrador, MEDIO): incidente de 2026-09-18 — o primeiro deploy construiu
+    `origin/main` 7 commits atrás do local (app exigia `VITE_IDP_ACCOUNT_URL`, `/callback` com 404).
+    A integração Git da Vercel só vê o que está no remoto; erro de variável que não existe mais no
+    código é o sintoma.
+  - Adiado, sem dono: as pendências herdadas (AC-11) — ramo "segundo 401 → falha sem redirect" e
+    429 real — perdem esta tarefa como destino; candidatas a `/review` própria.
 - **Tipo:** decisão.

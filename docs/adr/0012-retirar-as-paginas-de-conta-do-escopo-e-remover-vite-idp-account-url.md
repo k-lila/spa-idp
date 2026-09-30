@@ -4,29 +4,30 @@
 
 Aceito — 2026-09-16
 
+Revisão — 2026-09-29: referências a documentos de trabalho suprimidas; decisão inalterada (ver índice).
+
 ## Contexto
 
-D2 (`docs/spa-nucleo.md` §5; `docs/plano-pre-implementacao.md` §2, §3, §4 e §7.3; `CLAUDE.md`)
+D2 (`docs/spa-nucleo.md` §5; o plano; `CLAUDE.md`)
 fixou a gestão de conta como "linkada às páginas server-side do IdP": um link "Registrar-se" na
 landing e um "Editar perfil" em `/app`, ambos com base em `VITE_IDP_ACCOUNT_URL`, lida e exigida
-no boot por `src/config.ts` (ADR 0005). Os caminhos finais ficaram como decisão pendente (§7.3),
+no boot por `src/config.ts` (ADR 0005). Os caminhos finais ficaram como decisão pendente no plano,
 e o `.env.example`, o `playwright.config.ts` e os fakes de config dos testes carregam um
 placeholder que o fake não serve (ADR 0004, consequência negativa: 404 em dev).
 
-O IdP decidiu não ter cadastro nem edição de perfil nesta fase (`docs/contrato-backend.md`
-do IdP, §5.4 e §8; ADR do IdP "sem páginas de conta nesta fase", pendente lá): contas continuam
+O IdP decidiu não ter cadastro nem edição de perfil nesta fase (ADR do IdP "sem páginas de conta nesta fase", pendente lá): contas continuam
 criadas pelo admin, e cadastro público num IdP exposto exige antes validadores de senha, limite de taxa e
-verificação de e-mail. O `contrato-frontend.md` §5.3 pede à SPA que retire a dependência.
+verificação de e-mail. O acordo entre os projetos pede à SPA que retire a dependência.
 
-Do lado da SPA: nenhum módulo de produção lê `config.idpAccountUrl`; os links nunca foram criados
-(etapas 1–7 do plano, todas fechadas); a variável obrigatória força um valor fictício em todo
+Do lado da SPA: nenhum módulo de produção lê `config.idpAccountUrl`; os links nunca foram criados;
+a variável obrigatória força um valor fictício em todo
 ambiente, inclusive no painel da Vercel (apontado nas TASK-002 e TASK-006). As ADRs 0004 e 0005
 mencionam a variável e são imutáveis.
 
 ## Decisão
 
 Vamos emendar D2: nesta fase a SPA **não oferece gestão de conta** — nem própria, nem por link ao
-IdP. "Registrar-se" e "Editar perfil" saem do plano §2; o §7.3 fica fechado.
+IdP. "Registrar-se" e "Editar perfil" saem do plano; a pendência dos caminhos fica fechada.
 
 Vamos **remover** `VITE_IDP_ACCOUNT_URL`, não torná-la opcional: some de `src/config.ts`,
 `src/vite-env.d.ts`, `.env.example`, `playwright.config.ts` e dos fakes de config em
@@ -39,7 +40,7 @@ zod); só a contagem "quatro variáveis" e a menção a `idpAccountUrl` ficam de
 consequência negativa da ADR 0004 sobre o 404 das páginas de conta deixa de existir. Nenhuma das
 duas é substituída por esta ADR.
 
-Contraparte: ADR do IdP "sem páginas de conta nesta fase" e `contrato-backend.md` §5.4. Nenhuma
+Contraparte: ADR do IdP "sem páginas de conta nesta fase". Nenhuma
 mudança de código, `Application`, CORS ou claim no IdP decorre daqui.
 
 ## Consequências
@@ -49,8 +50,8 @@ Positivas:
 - Nenhum placeholder de configuração em dev, e2e ou Vercel; `config.ts` não valida o que ninguém
   usa.
 - `config.test.ts` (14 → 11 casos) e os `fakeConfig` dos testes de `userManager` ficam enxutos
-  antes de o passo 2 (`jose`) tocá-los de novo.
-- Plano, `CLAUDE.md` e contrato do front-end passam a dizer o mesmo que o `contrato-backend.md`.
+  antes de a verificação com `jose` tocá-los de novo.
+- Plano, `CLAUDE.md` e contrato do front-end passam a dizer o mesmo que o IdP.
 - A restrição de `spa-nucleo.md` §6 ("não chamar a API de conta com o `access_token` da RP") fica
   sem objeto: não há API de conta.
 
@@ -58,7 +59,7 @@ Negativas:
 
 - Se o cadastro público vier, é decisão nova nos dois projetos (ADR cruzada), com reintrodução de
   configuração (variável ou caminho descoberto) e de UI — nada disto fica preparado.
-- O plano §2 perde uma funcionalidade que veio da conversa de UX; a landing fica com um único
+- O plano perde uma funcionalidade que veio da conversa de UX; a landing fica com um único
   botão.
 - `docs/spa-nucleo.md` §5 ainda descreve D2 como "aguardar definição do mantenedor" e as ADRs
   0004/0005 seguem citando a variável: quem ler esses textos precisa chegar até esta ADR.
@@ -74,5 +75,5 @@ Negativas:
   conta; a SPA não colhe senha (I8) e não deve usar o `access_token` da RP contra outra audiência
   (I1).
 - **Adiar a emenda para quando a ADR do IdP existir** — Descartada: a decisão do IdP já está
-  registrada em prosa (`contrato-backend.md` §5.4/§8); esperar mantém os passos 2 e 3 tocando
+  registrada em prosa; esperar mantém os passos seguintes tocando
   testes sujos.

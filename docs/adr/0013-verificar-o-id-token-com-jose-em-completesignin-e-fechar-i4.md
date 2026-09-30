@@ -4,23 +4,25 @@
 
 Aceito — 2026-09-16
 
+Revisão — 2026-09-29: referências a documentos de trabalho suprimidas; decisão inalterada (ver índice).
+
 ## Contexto
 
 O invariante I4 (`docs/spa-nucleo.md` §2) exige que o `id_token` seja validado antes de ser
 confiado: assinatura via JWKS (RS256), `iss` = `{issuer}`, `aud` = `client_id`, `exp`, `nonce`.
 `oidc-client-ts` 3.5.0 valida só `sub` e `nonce` (fato verificado na TASK-003 e registrado nas
-Negativas da ADR 0006): não verifica assinatura, `iss`, `aud` nem `exp`. Desde a etapa 3 o token
+Negativas da ADR 0006): não verifica assinatura, `iss`, `aud` nem `exp`. Desde a integração do `oidc-client-ts` o token
 entra em `/app` com a confiança vinda apenas do `state`, do PKCE e do TLS do token endpoint; um
 token forjado, de outro issuer, para outro `client_id`, com `alg` trocado ou expirado seria
-renderizado. O plano §7.1 deixou duas opções — acrescentar `jose` ou relaxar I4 por ADR — e o
-`contrato-frontend.md` §5.1 recomendou a primeira.
+renderizado. O plano deixou duas opções — acrescentar `jose` ou relaxar I4 por ADR — e o
+acordo entre os projetos recomendou a primeira.
 
-O IdP publica o necessário (`docs/integracao-rp.md` do IdP, §7): `id_token` RS256 com `kid` no
+O IdP publica o necessário (`docs/integracao-rp.md` do IdP): `id_token` RS256 com `kid` no
 cabeçalho casando com a única chave RSA do `jwks_uri` anunciado na descoberta; `iss` igual ao
 issuer por igualdade exata de string (sem normalizar barra final); `aud` contendo o `client_id`;
 `exp`. Na descoberta e no `jwks_uri` o próprio `django-oauth-toolkit` emite
 `Access-Control-Allow-Origin: *` (`views/oidc.py`), independente da allowlist
-`CORS_ALLOWED_ORIGINS`, que governa `/o/token/` e `/o/userinfo/` (`contrato-backend.md` §5.2).
+`CORS_ALLOWED_ORIGINS`, que governa `/o/token/` e `/o/userinfo/`.
 O JWKS é público e alcançável de qualquer origem. O DOT também o serve com
 `Cache-Control: public, max-age=3600, stale-while-revalidate=3600`; o fake de `dev/idp-fake/`
 não envia `Cache-Control`, então o comportamento com cache HTTP nunca é exercitado pelo e2e.
@@ -36,7 +38,7 @@ autentica em `https` ou `localhost`.
 
 Vamos verificar o `id_token` com `jose` (v6, ESM, Web Crypto; `^6.2.12` em `dependencies`) em
 `completeSignin()`, dentro da promessa memoizada, **antes** da validação zod das claims, e dar
-I4 por cumprido; o plano §7.1 fica fechado.
+I4 por cumprido; a questão da verificação da assinatura fica fechada.
 
 `jose` fica confinado a `src/auth/idToken.ts`, pelo mesmo princípio da ADR 0006 para
 `oidc-client-ts`. O módulo exporta `verifyIdToken(idToken, getKey): Promise<void>` — um
@@ -68,7 +70,7 @@ Detalhes que importam:
   criptografia é exercitada com `createLocalJWKSet` em ambiente `node`; a orquestração de
   `completeSignin()` substitui `./idToken` por módulo.
 
-Contraparte: `integracao-rp.md` §7 e §2; `contrato-backend.md` §5.2 (CORS em `jwks_uri`); ADRs
+Contraparte: `integracao-rp.md`; ADRs
 0004 (RS256, chave com `kid`) e 0007 (issuer `{BASE_URL}/o`) do IdP. Nenhuma mudança de código,
 `Application`, CORS ou claim no IdP decorre daqui.
 
@@ -81,7 +83,7 @@ Positivas:
 - Mesmo caminho de rejeição da ADR 0007: nada novo em `Callback`, `AuthProvider` ou contexto;
   mensagem única mantida; nenhum token da tentativa fica em memória.
 - A busca do JWKS tem timeout próprio do `jose` (5 s): JWKS pendurado falha em tempo finito,
-  independente do `requestTimeoutInSeconds` do passo 3.
+  independente do `requestTimeoutInSeconds`.
 - Os e2e T-03 e T-05 passam a exercitar a verificação real (RS256 do `oidc-provider`); o T-03
   observa a requisição ao `jwks_uri`.
 - `jose` isolado num módulo de duas funções; `userManager.ts` continua o único ponto de contato
@@ -106,9 +108,9 @@ Negativas:
   de uma microtask a uma requisição de rede. Continua inofensiva pelo mesmo motivo da ADR 0007
   (em `/callback` só `Callback` está montada; `removeUser()` emite `userUnloaded`), mas cresce. A
   restrição de desenho da TASK-006 (toda transição `authenticated`→`anonymous` com a guarda
-  montada precisa navegar ou emitir erro) continua valendo para §7.2.
+  montada precisa navegar ou emitir erro) continua valendo para a sessão no reload.
 - A verificação cobre só `completeSignin()`. Qualquer entrada futura por `_buildUser`
-  (`signinSilent`, refresh com `id_token` novo — §7.2) grava token e emite `userLoaded` sem
+  (`signinSilent`, refresh com `id_token` novo) grava token e emite `userLoaded` sem
   passar por aqui; precisa replicar `verifyIdToken` + `removeUser()` (tech-debt TASK-004 A3).
 - `VITE_OIDC_ISSUER` com barra final falha só no callback, com a mensagem genérica; a causa
   aparece só no console (`unexpected "iss" claim value`). Rejeitar no boot em `config.ts` seria
@@ -123,17 +125,17 @@ Negativas:
 
 ## Alternativas consideradas
 
-- **Relaxar I4 por ADR** (plano §7.1, opção 2) — OIDC Core §3.1.3.7 permite dispensar a
+- **Relaxar I4 por ADR** (a segunda opção do plano) — OIDC Core §3.1.3.7 permite dispensar a
   assinatura quando o token vem por TLS direto do token endpoint. Descartada: transfere toda a
   confiança para DNS + CA + `VITE_OIDC_ISSUER` e deixa `iss`, `aud` e `exp` sem verificação
-  nenhuma, pelo custo da mesma chamada que verifica tudo (`contrato-frontend.md` §5.1).
+  nenhuma, pelo custo da mesma chamada que verifica tudo.
 - **Fazer `oidc-client-ts` verificar** — a lib não tem gancho de validação de assinatura desde
   a v2; seria fork ou patch. Descartada: código fora do nosso controle, atualização travada.
 - **Verificar num back-end próprio (BFF)** — a SPA não tem servidor; o token endpoint é chamado
   do navegador (I2, I3). Descartada: cria componente novo só para isto.
 - **`metadataService.getSigningKeys()` + `createLocalJWKSet`** — reaproveita o fetch da lib (e o
-  `requestTimeoutInSeconds` do passo 3). Descartada: não recarrega ao ver `kid` desconhecido,
-  exige cast do tipo `SigningKey` da lib para JWK, e diverge do contrato §5.1.
+  `requestTimeoutInSeconds`). Descartada: não recarrega ao ver `kid` desconhecido,
+  exige cast do tipo `SigningKey` da lib para JWK, e diverge do acordo entre os projetos.
 - **Comparar `iss` com `metadataService.getIssuer()`** — toleraria a barra final. Descartada:
   circular; a configuração é a âncora de confiança.
 - **`getKey` como parâmetro com default em `completeSignin()`** — testabilidade direta.

@@ -4,17 +4,19 @@
 
 Aceito — 2026-09-15
 
+Revisão — 2026-09-29: referências a documentos de trabalho suprimidas; decisão inalterada (ver índice).
+
 ## Contexto
 
 O núcleo (`docs/spa-nucleo.md`, §5, D1) deixava aberta a escolha entre `oidc-client-ts` e PKCE
 à mão; o plano fixou D1 = `oidc-client-ts`, mas nenhuma ADR registra a decisão nem como a
-biblioteca é delimitada dentro da SPA. A etapa 3 do plano (§8) é onde a dependência entra. Os
+biblioteca é delimitada dentro da SPA. Esta é a etapa em que a dependência entra. Os
 invariantes impõem tokens só em memória (I3), redirect + PKCE S256 (I2), discovery a partir do
-issuer (I5), configuração por `VITE_*` (I6) e guarda por redirect (I8). O plano (§5) sugere a
+issuer (I5), configuração por `VITE_*` (I6) e guarda por redirect (I8). O plano sugere a
 configuração (`userStore` em memória, `stateStore` no padrão, `automaticSilentRenew: false`,
 `loadUserInfo: false`) e deixa abertas duas decisões que tocam a biblioteca: a verificação da
-assinatura do `id_token` (§7.1 — a biblioteca não verifica assinatura via JWKS desde a v2) e o
-mecanismo de sessão no reload (§7.2). Com o `userStore` em memória, a biblioteca ainda precisa de
+assinatura do `id_token` (a biblioteca não verifica assinatura via JWKS desde a v2) e o
+mecanismo de sessão no reload. Com o `userStore` em memória, a biblioteca ainda precisa de
 um lugar que sobreviva ao redirect top-level para `state`, `nonce` e `code_verifier`, porque a
 página é descarregada. Em dev, `<StrictMode>` executa efeitos duas vezes: uma segunda chamada a
 `signinRedirectCallback()` não encontra o `state` consumido pela primeira e falha, e um segundo
@@ -33,8 +35,8 @@ e memoiza em escopo de módulo as promessas de `signinRedirect` e `signinRedirec
 modo que chamadas concorrentes (StrictMode) compartilhem uma única execução. O `AuthProvider`
 aprende a identidade pelo evento `userLoaded` do `UserManager`, não por retorno de função.
 `restoreSession()` hoje consulta apenas o store em memória: após reload responde "sem sessão" e
-a rota protegida volta ao IdP. A verificação da assinatura do `id_token` não é feita nesta etapa;
-fica para a decisão §7.1 (etapa 4).
+a rota protegida volta ao IdP. A verificação da assinatura do `id_token` não é feita aqui;
+fica para a decisão sobre a verificação da assinatura do `id_token`.
 
 ## Consequências
 
@@ -44,21 +46,21 @@ Positivas:
   da SPA são quatro arquivos pequenos.
 - I3 fica garantido por configuração: nenhuma chave `oidc.user:*` em Local/Session Storage; o
   que fica no `sessionStorage` durante o redirect não contém token.
-- `restoreSession()` e o `userStore` são o único ponto a tocar quando §7.2 for decidido;
+- `restoreSession()` e o `userStore` são o único ponto a tocar quando a sessão no reload for decidida;
   `signinSilent` já existe na biblioteca se a decisão for silent auth.
 - StrictMode continua ligado e `state` continua estrito (I2); a deduplicação é em código nosso,
   não em configuração relaxada.
-- Os eventos do `UserManager` cobrem "Sair" (etapa 6: `removeUser` → `userUnloaded`) sem novo
+- Os eventos do `UserManager` cobrem "Sair" (`removeUser` → `userUnloaded`) sem novo
   encanamento.
 
 Negativas:
 
-- Enquanto §7.1 não for decidido, o `id_token` é aceito sem verificar assinatura; a confiança vem
+- Enquanto a verificação da assinatura do `id_token` não for decidida, o `id_token` é aceito sem verificar assinatura; a confiança vem
   do `state`, do PKCE e do TLS do token endpoint. Não se deve presumir que a biblioteca confere
   `iss`, `aud`, `exp` e `nonce` do `id_token` — isso precisa ser confirmado no código instalado ao
-  decidir §7.1. I4 fica declaradamente pendente.
-- Reload apaga a sessão: um redirect ao IdP a cada F5, até §7.2.
-- O tipo `User` da biblioteca chega às páginas (`user.profile`); a etapa 4 decide se o contexto
+  decidir a verificação. I4 fica declaradamente pendente.
+- Reload apaga a sessão: um redirect ao IdP a cada F5, até a decisão sobre a sessão no reload.
+- O tipo `User` da biblioteca chega às páginas (`user.profile`); a validação das claims decide se o contexto
   passa a carregar claims validadas por zod.
 - Memoização em escopo de módulo é estado global; funciona porque todo fluxo de redirect é um
   carregamento de página novo. Um segundo `completeSignin()` na mesma vida do módulo devolve o
@@ -66,7 +68,7 @@ Negativas:
 - A biblioteca usa `crypto.subtle` para o PKCE: só roda em contexto seguro (`https` ou
   `localhost`); um IP de rede local sobre `http` não autentica.
 - O `refresh_token` fica em memória com o resto; com `automaticSilentRenew: false` nunca é usado
-  nesta etapa, mas está lá.
+  aqui, mas está lá.
 
 ## Alternativas consideradas
 

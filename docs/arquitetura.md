@@ -160,3 +160,52 @@ O `access_token` da RP só lê identidade: `authGet` só faz `GET` (I1).
 | Preview | nenhum | a aplicação falha no boot, deliberadamente (ADR 0016) |
 | Desenvolvimento | IdP real em `http://localhost:8000/o` | `.env.local` |
 | e2e | IdP fake em `http://localhost:9000/o` | `npm run test:e2e` sobe fake e SPA |
+
+---
+
+## Apêndice: índice das ADRs
+
+Uma decisão por arquivo em `docs/adr/`; o formato está em `docs/adr/template-adr.md`. ADR
+aceita é imutável: decisão que mudou vira ADR nova. As ADRs guardam o que se sabia e se decidiu
+na data delas; este índice guarda o que ajuda a lê-las hoje (emendas, defasagens, eras). Uma ADR
+aceita só é editada para restabelecer a verdade: em 2026-09-29, as referências a documentos de
+trabalho que não existem mais (plano de pré-implementação, contratos de front-end e de back-end,
+roteiro de implementação, mapa de comportamento do back-end) e os ponteiros "§N" e "etapa N"
+foram suprimidos, sem mudar decisão. Cada ADR editada traz, sob o status, uma linha de revisão.
+"O plano", sem número, continua citado como o documento de trabalho da época.
+
+| Decisão | ADR | Leitura hoje | Revisões depois do aceite |
+|---|---|---|---|
+| Fixar npm e Node 22 LTS como base de ferramentas | `0001-fixar-npm-e-node-22-como-base-de-ferramentas.md` | engines apertado pela 0016 | supressão de referências voláteis (2026-09-29) |
+| Adotar Tailwind CSS v4 pelo plugin oficial do Vite | `0002-adotar-tailwind-v4-pelo-plugin-do-vite.md` | — | — |
+| Usar React Router v7 como biblioteca, em modo data router | `0003-usar-react-router-v7-como-biblioteca-em-modo-data-router.md` | — | supressão de referências voláteis (2026-09-29) |
+| Rodar o IdP fake local com `oidc-provider` em JavaScript ESM, montado em `/o` | `0004-rodar-idp-fake-local-com-oidc-provider-em-javascript.md` | cláusula do logout do fake emendada pela 0019; escrita na era Render, superada pela 0018 | supressão de referências voláteis (2026-09-29) |
+| Validar as variáveis `VITE_*` no boot em `src/config.ts`, sem zod | `0005-validar-variaveis-de-ambiente-no-boot-em-config-ts.md` | contagem de variáveis alterada pela 0012 (três) e pela 0019 (quatro) | supressão de referências voláteis (2026-09-29) |
+| Integrar o `oidc-client-ts` v3 por um `UserManager` único, com tokens em memória e estado de redirect em `sessionStorage` | `0006-integrar-oidc-client-ts-com-tokens-em-memoria.md` | defasada pela 0014 (sessão no reload) e pela 0013 (verificação) | supressão de referências voláteis (2026-09-29) |
+| Validar as claims do `id_token` com zod em dois portões e expor ao contexto só claims validadas | `0007-validar-claims-do-id-token-com-zod-e-expor-so-claims-validadas-no-contexto.md` | — | supressão de referências voláteis (2026-09-29) |
+| Anexar o Bearer e converter 401 em re-auth num wrapper GET-only em `src/api/http.ts`, mantendo a requisição pendente e com guarda de uma re-auth por aba | `0008-anexar-bearer-e-converter-401-em-re-auth-num-wrapper-get-em-api-http.md` | — | supressão de referências voláteis (2026-09-29) |
+| Consumir o `userinfo` com TanStack Query v5, chaveado pelo `sub` do `id_token` e validado pelo schema de claims | `0009-consumir-o-userinfo-com-tanstack-query-chaveado-pelo-sub-e-validado-pelo-schema-de-claims.md` | — | supressão de referências voláteis (2026-09-29) |
+| Sair localmente com `removeUser()` e disparar a guarda de rota só na entrada sem sessão, nunca na perda de sessão com a guarda montada | `0010-sair-localmente-com-removeuser-e-disparar-a-guarda-so-na-entrada-sem-sessao.md` | **substituída pela 0019** | supressão de referências voláteis (2026-09-29) |
+| Levar o destino do deep-link no `state` do `signinRedirect` e aceitar no callback só caminho da própria origem, resolvido por `URL` | `0011-levar-o-destino-do-deep-link-no-state-do-signinredirect-e-aceitar-so-caminho-da-propria-origem.md` | — | supressão de referências voláteis (2026-09-29) |
+| Retirar as páginas de conta do escopo da SPA e remover `VITE_IDP_ACCOUNT_URL` (emenda a D2) | `0012-retirar-as-paginas-de-conta-do-escopo-e-remover-vite-idp-account-url.md` | par com a 0023 do IdP | troca de nomes de diretório pelo papel (56c1ee6, 2026-09-29); supressão de referências voláteis (2026-09-29) |
+| Verificar o `id_token` com `jose` em `completeSignin()` — assinatura via `jwks_uri`, `iss` exato, `aud`, RS256 e `exp` — e dar I4 por cumprido | `0013-verificar-o-id-token-com-jose-em-completesignin-e-fechar-i4.md` | defasada pela 0014 nas entradas futuras por `_buildUser` | troca de nomes de diretório pelo papel (56c1ee6, 2026-09-29); supressão de referências voláteis (2026-09-29) |
+| Manter a sessão no reload por redirect ao IdP e SSO, sem token fora da memória, e fechar a questão da sessão no reload | `0014-manter-a-sessao-no-reload-por-redirect-e-sso-do-idp-sem-token-fora-da-memoria.md` | par com a 0021 do IdP | troca de nomes de diretório pelo papel (56c1ee6, 2026-09-29); supressão de referências voláteis (2026-09-29) |
+| Fixar `requestTimeoutInSeconds` em 15 s no `UserManager` | `0015-fixar-requesttimeoutinseconds-em-15-s-no-usermanager.md` | escrita na era AWS/Render, superada pela 0018 | supressão de referências voláteis (2026-09-29) |
+| Publicar a SPA na Vercel com `vercel.json`, variáveis por ambiente no painel e previews sem IdP de produção | `0016-publicar-na-vercel-com-vercel-json-variaveis-por-ambiente-e-previews-sem-idp-de-producao.md` | escrita na era AWS, superada pela 0018; par com a 0022 do IdP; variável nova pela 0019 | troca de nomes de diretório pelo papel (56c1ee6, 2026-09-29); supressão de referências voláteis (2026-09-29) |
+| Fixar `VITE_OIDC_ISSUER` de produção na forma `https://<dominio-do-idp>/o`, sem barra final | `0017-fixar-vite-oidc-issuer-de-producao-em-https-dominio-do-idp-barra-o-sem-barra-final.md` | escrita na era AWS, superada pela 0018; par com a 0007 e a 0025 do IdP | troca de nomes de diretório pelo papel (56c1ee6, 2026-09-29); supressão de referências voláteis (2026-09-29) |
+| Aceitar o IdP de produção servido pelo Cloudflare Tunnel com o contrato inalterado | `0018-aceitar-o-idp-de-producao-servido-pelo-cloudflare-tunnel-com-o-contrato-inalterado.md` | par com a 0027 do IdP | — |
+| Sair por logout iniciado pela RP com `signoutRedirect()` sem `state`, mantendo a guarda disparada só na entrada sem sessão | `0019-sair-por-logout-iniciado-pela-rp-com-signoutredirect-sem-state.md` | substitui a 0010; emenda a cláusula do fake na 0004; par com a 0029 do IdP | troca de nomes de diretório pelo papel (56c1ee6, 2026-09-29) |
+
+### Pares com o IdP
+
+| Tema | SPA | IdP |
+|---|---|---|
+| Issuer | 0017 | 0007, 0025 |
+| Sessão no reload e consentimento | 0014 | 0021 |
+| Páginas de conta | 0012 | 0023 |
+| CORS e previews | 0016 | 0022 |
+| Túnel da Cloudflare | 0018 | 0027 |
+| Logout pela RP | 0019 | 0029, 0030 |
+
+Quem decidiu depois cita quem decidiu antes; a citação mútua só existe nos pares aceitos no
+mesmo ato. Este índice registra o par nos dois sentidos.

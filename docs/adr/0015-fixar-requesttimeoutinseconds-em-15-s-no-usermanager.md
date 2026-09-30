@@ -4,9 +4,11 @@
 
 Aceito — 2026-09-17
 
+Revisão — 2026-09-29: referências a documentos de trabalho suprimidas; decisão inalterada (ver índice).
+
 ## Contexto
 
-O item 7 da verificação (`contrato-frontend.md` §7) exige que o login falhe em tempo finito. Sem
+A verificação do contrato exige que o login falhe em tempo finito. Sem
 `requestTimeoutInSeconds`, o `fetch` da biblioteca não rejeita sozinho: um IdP adormecido (cold
 start no Render/AWS) ou uma rede que engole a resposta pendura `signin()` sem feedback, e o
 segundo clique em "Entrar" devolve a mesma promessa memoizada (TASK-006). A ADR 0014 multiplica
@@ -41,7 +43,7 @@ O valor: um cold start atinge a descoberta, onde a rejeição é barata e o bot�
 Positivas:
 
 - Falha em tempo finito nos três pontos de contato com o IdP (landing, guarda, callback), com
-  retentativa por clique onde ela é possível; o item 7 do contrato §7 fecha.
+  retentativa por clique onde ela é possível; a exigência de falha em tempo finito fecha.
 
 Negativas:
 
@@ -50,12 +52,12 @@ Negativas:
 - O timeout pode derrubar um login válido se `/o/token/` demorar mais que isso (banco frio na
   AWS): o sinal é o erro do callback com `ErrorTimeout` no console logo após um login que
   funcionou no IdP. Sem retentativa no callback; novo login do zero.
-- O literal fica nesta ADR; retune com evidência dos passos 5 e 6 é ADR nova que substitui esta.
+- O literal fica nesta ADR; retune com evidência de integração e produção é ADR nova que substitui esta.
 
 ## Alternativas consideradas
 
-- **Sem timeout** (estado anterior) — IdP lento pendura o clique para sempre e o item 7 do
-  contrato §7 não fecha. Descartada.
-- **10 s** — aceitável; fica como piso se a evidência dos passos 5 e 6 pedir ajuste. Descartado
+- **Sem timeout** (estado anterior) — IdP lento pendura o clique para sempre e a exigência de
+  falha em tempo finito não fecha. Descartada.
+- **10 s** — aceitável; fica como piso se a evidência de integração e produção pedir ajuste. Descartado
   por ora.
 - **30 s** — longo demais sem feedback. Descartado.

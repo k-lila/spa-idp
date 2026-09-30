@@ -4,9 +4,11 @@
 
 Aceito — 2026-09-16
 
+Revisão — 2026-09-29: referências a documentos de trabalho suprimidas; decisão inalterada (ver índice).
+
 ## Contexto
 
-O plano (§2.6) prevê que a rota protegida sem sessão guarde o destino no `state` do redirect e o
+O plano prevê que a rota protegida sem sessão guarde o destino no `state` do redirect e o
 callback o restaure; hoje `Callback` navega para `/app` fixo e `completeSignin()` descarta
 `user.state` (TASK-004, A4). O destino atravessa um redirect top-level, logo precisa de um lugar
 fora da memória; há dois candidatos: o `state` da própria biblioteca (gravado em `sessionStorage`
@@ -59,4 +61,4 @@ Negativas:
 - **Validar por prefixo (`startsWith("/") && !startsWith("//")`)** — sem `URL`. Descartada: deixa
   passar `/\host`, que o navegador resolve como `//host` e o `react-router` entrega a
   `location.assign`.
-- **Manter `/app` fixo** — sem deep-link. Descartada: o plano §2.6 e AC-06 exigem o destino.
+- **Manter `/app` fixo** — sem deep-link. Descartada: o plano e AC-06 exigem o destino.

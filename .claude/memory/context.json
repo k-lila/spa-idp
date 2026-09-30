@@ -39,63 +39,6 @@
     },
     "proxima_acao": "a proxima invocacao ou a pergunta ao usuario, em uma linha"
   },
-  "atualizado_em": "2026-09-29",
-  "tarefas_ativas": [
-    {
-      "task_id": "TASK-013",
-      "demanda": "Publicar a SPA em producao na Vercel (https://spa-idp.vercel.app; projeto Vercel `spa-idp`, repo github.com/k-lila/spa-idp) — passo 6 de docs/implementacao-contrato.md; fecha plano §8/§10 etapas 8 e 9 e contrato-frontend §9 'Producao'. Foco na SPA; o IdP entra so como insumo.",
-      "rota": "/chore — configuracao externa (painel Vercel, GitHub) + verificacao manual; nenhum codigo previsto (defeito apontado pela verificacao vira tarefa propria)",
-      "aberta_em": "2026-09-18",
-      "fase_atual": {
-        "numero": "B — insumos do IdP",
-        "responsavel": "usuario",
-        "estado": "aguardando-usuario"
-      },
-      "fases_concluidas": [
-        "A usuario/orquestrador — LIBERADO com RESSALVA: AC-05 verificado em 2026-09-18 por `curl -I` em /callback, /app e / → 200 text/html, referrer-policy: no-referrer, x-content-type-options: nosniff, cache-control: public, max-age=0, must-revalidate (nao e no-store; insumo do AC-10). AC-01 confirmado pelo deploy (projeto spa-idp, main). AC-02 (Node 22.x no painel) e AC-04 (branch protection) NAO confirmados — conferir no fechamento. AC-03: REDIRECT_URI preenchivel; ISSUER/CLIENT_ID aguardam B."
-      ],
-      "autorizacao_pre_alteracao": "nao-se-aplica",
-      "artefatos": {
-        "ac": [
-          "— A. PAINEL DA VERCEL — executavel hoje, sem o IdP —",
-          "AC-01 — Projeto Vercel importado do repo GitHub; framework Vite; branch de producao = main",
-          "AC-02 — 'Node.js Version' = 22.x no painel (redundante com engines >=22.13 <23); log da build confirma Node 22",
-          "AC-03 — Variaveis com Preview DESMARCADO em todas. Production: VITE_OIDC_REDIRECT_URI=https://spa-idp.vercel.app/callback (ja conhecido); VITE_OIDC_ISSUER e VITE_OIDC_CLIENT_ID aguardam o bloco B. Development: NAO cadastrar (disposicao do adiado A4 da TASK-011: ambiente morto no fluxo; `vercel env pull` sobrescreveria .env.local)",
-          "AC-04 — Branch protection na main: required check `ci` (nome do job), bypass de administrador desligado; trabalho por PR daqui em diante (ADR 0016: o gate so existe nesse caminho)",
-          "AC-05 — Primeiro deploy verde. `curl -I https://spa-idp.vercel.app/callback` → 200 text/html (rewrite do vercel.json), referrer-policy: no-referrer, x-content-type-options: nosniff; anotar o cache-control do documento (insumo do AC-10). App lanca no boot sem issuer/client_id — esperado (ADR 0005/0016)",
-          "— B. INSUMOS DO IdP — fora desta tarefa; so entregar e receber —",
-          "AC-06 — Entregar ao nova_api: origem https://spa-idp.vercel.app e redirect_uri https://spa-idp.vercel.app/callback, igualdade exata. NAO entregar URLs de deployment (spa-idp-<hash>-<team>.vercel.app) nem aliases de branch: login a partir delas falha por redirect_uri divergente — aceito (disposicao do adiado A3 da TASK-011: a Vercel nao redireciona essas URLs; nada a configurar em Domains)",
-          "AC-07 — Receber: client_id de producao e issuer na forma da ADR 0017 (https://<host>.com.br/o, sem barra final). Preencher o AC-03",
-          "— C. VERIFICACAO EM PRODUCAO — depende de B —",
-          "AC-08 — Contrato §7 item 1 em https://spa-idp.vercel.app: 'Entrar' → login no Django → /app com sub, name, email do id_token E do userinfo",
-          "AC-09 — F5 em /app volta sem senha e sem consentimento (SSO + skip_authorization)",
-          "AC-10 — bfcache: DevTools → Application → Back/forward cache na origem publicada; cruzar com o cache-control do AC-05 (no-store inviabilizaria; ADR 0010 foi verificada com bfcache forcado)",
-          "AC-11 — (oportunista) pendencias herdadas da TASK-012: preflight do /o/userinfo/, 401 com cabecalho CORS, 429 real — registrar o observado, sem exigir",
-          "— D. FECHAMENTO —",
-          "AC-12 — contrato-frontend §9 'Producao': 7 [x]. plano §10: etapas 8 e 9 [x]. Criterio 'preview publicado' da etapa 8 dado por satisfeito por AC-05 + AC-08 (previews nao sobem por desenho, ADR 0016) — anotar a reinterpretacao no decisions.md, sem editar o §8 (precedente TASK-002/004/010)",
-          "AC-13 — decisions.md TASK-013: origem = alias da Vercel (o 'aliases redirecionados para a origem canonica' adiado na TASK-011 perde objeto); Development nao cadastrado; renomear o projeto Vercel muda a origem e exige nova entrega ao IdP; valores reais de issuer/client_id NAO entram no repo (I6). Sem ADR nova: 0016 e 0017 ja cobrem",
-          "AC-14 — Commit dos dois docs + memoria; TASK-013 sai de tarefas_ativas"
-        ],
-        "t": [
-          "nenhum — sem codigo; verificacao manual (o contrato aceita, implementacao-contrato passo 5b)"
-        ],
-        "adrs_pendentes": [],
-        "arquivos_tocados": [
-          "docs/contrato-frontend.md — modificado (bloco D, AC-12)",
-          "docs/plano-pre-implementacao.md — modificado (§10, AC-12)",
-          ".claude/memory/decisions.md — modificado (AC-13)",
-          ".claude/memory/context.json — modificado (AC-14)"
-        ]
-      },
-      "pendencias_de_fechamento": {
-        "apontamentos_sem_disposicao": [
-          "[BAIXO] A3 — aliases *.vercel.app (URLs de deployment/branch) e a origem canonica — senso-critico (TASK-011); disposicao no AC-06/AC-13",
-          "[BAIXO] A4 — ambiente Development do painel e `vercel env pull` — senso-critico (TASK-011); disposicao no AC-03/AC-13",
-          "[MEDIO] Incidente 2026-09-18: primeiro deploy construiu origin/main em b6762a7 (etapa 7), 7 commits atras do main local — app exigia VITE_IDP_ACCOUNT_URL (removida na TASK-008) e /callback dava 404 (sem vercel.json). Causa: commits nao empurrados. Resolvido pelo usuario com git push origin main; redeploy ok. Disposicao a registrar no decisions.md (AC-13): 'deploy pela integracao Git so ve o que esta no remoto' — sintoma classico: erro de variavel que nao existe mais no codigo. — orquestrador"
-        ],
-        "bloqueios_abertos": []
-      },
-      "proxima_acao": "Bloco B: IdP offline; dominio decidido k-lila.com.br → issuer na forma da ADR 0017 (https://k-lila.com.br/o ou subdominio, quando o nova_api fixar). Aguardando o IdP subir para entregar origem/redirect_uri (AC-06) e receber client_id/issuer (AC-07). Enquanto isso, comportamento esperado em producao: 'Entrar' → 'Nao foi possivel iniciar o login' em ate 15 s (ADR 0015)."
-    }
-  ]
+  "atualizado_em": "2026-09-30",
+  "tarefas_ativas": []
 }

@@ -4,10 +4,12 @@
 
 Aceito — 2026-09-15
 
+Revisão — 2026-09-29: referências a documentos de trabalho suprimidas; decisão inalterada (ver índice).
+
 ## Contexto
 
 O núcleo (`docs/spa-nucleo.md`, §3) prevê um "wrapper de `fetch`" que anexa `Bearer` e trata
-`401` com re-autenticação; a etapa 5 do plano (§8) é onde ele entra, tendo o `userinfo` como
+`401` com re-autenticação; é aqui que ele entra, tendo o `userinfo` como
 único consumidor. Até aqui o `access_token` nunca foi usado: fica no `userStore` em memória
 (ADR 0006) e as páginas só veem claims validadas (ADR 0007). Três restrições moldam o wrapper.
 I1 diz que o token da RP só lê identidade — nunca escreve no diretório de usuários. Ninguém
@@ -15,7 +17,7 @@ ouve `userUnloaded` (TASK-004), então "limpar o token e esperar reação" não 
 re-auth precisa passar por `signin()`, que já memoiza a promessa de `signinRedirect()` — e essa
 promessa, no `oidc-client-ts` 3.5, só resolve em `pageshow`, ou seja, permanece pendente até a
 página ser descarregada. Por fim, se o IdP emitir um token novo que o `userinfo` continua
-recusando (audiência, escopo ou relógio errados — cenário plausível na etapa 9, contra o IdP
+recusando (audiência, escopo ou relógio errados — cenário plausível contra o IdP
 real), `/app → IdP → /callback → /app → 401` vira um laço rápido e silencioso, porque o SSO do
 IdP não pede senha; a memoização em escopo de módulo não atravessa carregamentos de página.
 O critério de aceite exige exatamente um redirect por 401, sem mensagem de erro nem retentativa.
@@ -56,8 +58,8 @@ Negativas:
 - O marcador em `sessionStorage` é um segundo estado fora do React (o primeiro é o `stateStore`
   da biblioteca). Efeito colateral conhecido: voltar do IdP por bfcache após um `401` deixa o
   marcador gravado; o refetch seguinte mostra falha em vez de redirecionar, até um `F5` (que
-  reinicia a sessão em memória e passa pela guarda de rota). Soma-se ao tech-debt de bfcache da
-  etapa 6.
+  reinicia a sessão em memória e passa pela guarda de rota). Soma-se ao tech-debt de bfcache do
+  "Sair".
 - O caminho "segundo `401`" não é provocável contra o fake (chave e store são recriados juntos);
   fica coberto só por teste unitário.
 - `403` e demais status não são interpretados: caem na falha genérica do consumidor.
@@ -70,8 +72,8 @@ Negativas:
   viola "sem mensagem de erro" e obriga a página a distinguir "redirecionando" de "falha".
 - **`removeUser()` e confiar na reação do `AuthProvider`** — ninguém ouve `userUnloaded` e o
   estado ficaria `authenticated` com token morto. Descartada.
-- **Sem guarda de laço, tech-debt para a etapa 6** — menos código hoje. Descartada: o laço só
-  aparece na etapa 9, contra o IdP real, e é o pior modo de falha para diagnosticar (cada volta
+- **Sem guarda de laço, tech-debt para depois** — menos código hoje. Descartada: o laço só
+  aparece contra o IdP real, e é o pior modo de falha para diagnosticar (cada volta
   é uma navegação completa; o console se perde). O custo da guarda são três linhas.
 - **Guarda em memória (variável de módulo)** — não sobrevive ao redirect; inútil por definição.
 - **Wrapper genérico com `RequestInit`** — mais flexível. Descartado: o único consumidor é um

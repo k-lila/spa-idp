@@ -4,10 +4,12 @@
 
 Aceito — 2026-09-15
 
+Revisão — 2026-09-29: referências a documentos de trabalho suprimidas; decisão inalterada (ver índice).
+
 ## Contexto
 
 O núcleo (`docs/spa-nucleo.md`, §3) fixa TanStack Query como camada de estado de servidor, com
-`userinfo` como primeiro caso; a etapa 5 do plano (§8) a introduz. `loadUserInfo` está em `false`
+`userinfo` como primeiro caso; é aqui que ela entra. `loadUserInfo` está em `false`
 no `UserManager` (ADR 0006) de propósito: a identidade do `id_token` chega pelo contexto, e o
 `userinfo` deve ser uma chamada própria, visível no DevTools, que prove o `access_token` contra um
 recurso protegido cross-origin. I5 exige o endpoint vindo do discovery; I7 exige validar o corpo
@@ -44,7 +46,7 @@ Positivas:
   verificação manual legível.
 - Token expirado em memória passa a ser detectado na primeira chamada ao `userinfo` — cobertura
   parcial do tech-debt "`getUser()` ignora `expires_at`" (TASK-003).
-- O provider fora de `AuthProvider` permite, na etapa 6, limpar o cache ao ouvir `userUnloaded`.
+- O provider fora de `AuthProvider` permite, no "Sair", limpar o cache ao ouvir `userUnloaded`.
 
 Negativas:
 
@@ -56,7 +58,7 @@ Negativas:
   trocar de aba (ou minimizar), não apenas clicar na janela.
 - A retentativa única também se aplica a erros determinísticos (contrato, `sub` divergente):
   uma requisição a mais antes da falha. Distinguir exigiria mais uma classe de erro.
-- Dados de identidade ficam no cache do `QueryClient` até a página morrer; "Sair" (etapa 6)
+- Dados de identidade ficam no cache do `QueryClient` até a página morrer; "Sair"
   precisa limpá-los.
 - `RequireAuth` continua admitindo token expirado em `/app`; I8 "token válido" segue parcial.
 

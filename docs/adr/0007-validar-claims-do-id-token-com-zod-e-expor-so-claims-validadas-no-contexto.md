@@ -4,11 +4,13 @@
 
 Aceito — 2026-09-15
 
+Revisão — 2026-09-29: referências a documentos de trabalho suprimidas; decisão inalterada (ver índice).
+
 ## Contexto
 
-I7 exige que dados que cruzam a borda sejam validados em runtime; a etapa 3 entregou a identidade
+I7 exige que dados que cruzam a borda sejam validados em runtime; a integração do `oidc-client-ts` entregou a identidade
 às páginas pelo tipo estático `User.profile` do `oidc-client-ts`, sem validar nada. A ADR 0006
-deixou explicitamente para a etapa 4 decidir se o contexto passa a carregar claims validadas. O
+deixou explicitamente para depois decidir se o contexto passa a carregar claims validadas. O
 contrato confirmado com o mantenedor é: `sub` e `email` string não vazia (`email` é o
 identificador de login no IdP); `name` string, podendo ser vazia (vem de `get_full_name()`, que
 devolve `""` para usuário sem nome cadastrado); `email_verified` não existe; claims extras
@@ -22,7 +24,7 @@ está montada, então a janela não é uma navegação imediata: é o estado fic
 identidade rejeitada e ninguém ouvir `userUnloaded` para desfazê-lo — o clique em "Voltar ao
 início" cairia na `Landing`, que redirecionaria a `/app`, e a área renderizaria a identidade
 rejeitada. O critério de aceite exige que isso nunca aconteça e que, após a rejeição, nenhum token
-da tentativa fique em memória (I3). A verificação de assinatura (§7.1) está fora desta decisão.
+da tentativa fique em memória (I3). A verificação de assinatura está fora desta decisão.
 
 ## Decisão
 
@@ -37,7 +39,7 @@ promessa memoizada, o resultado de `signinRedirectCallback()` é validado; em fa
 `/callback` registra no console e converte no estado de erro já existente. A variante
 `authenticated` do `AuthState` passa a carregar `claims: Claims` no lugar de `user: User`; as
 páginas deixam de ver o `User` da biblioteca e, com ele, os tokens. `restoreSession()` mantém a
-assinatura (`User | null`) até §7.2.
+assinatura (`User | null`) até a decisão sobre a sessão no reload.
 
 ## Consequências
 
@@ -49,8 +51,8 @@ Positivas:
   volta a redirecionar ao IdP (I8) e a landing volta a mostrar "Entrar".
 - Todos os erros do callback (state, code, rede, claims) caem na mesma rejeição; a UI de erro não
   precisa distinguir causas.
-- O contrato de identidade fica explícito, tipado e num arquivo só; `userinfo` (etapa 5) e o
-  retorno de `restoreSession()` após §7.2 reutilizam o mesmo schema.
+- O contrato de identidade fica explícito, tipado e num arquivo só; `userinfo` e o
+  retorno de `restoreSession()`, depois da decisão sobre a sessão no reload, reutilizam o mesmo schema.
 - `oidc-client-ts` deixa de ser importado em `AuthContext.ts`.
 
 Negativas:

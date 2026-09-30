@@ -4,6 +4,8 @@
 
 Aceito — 2026-09-14
 
+Revisão — 2026-09-29: referências a documentos de trabalho suprimidas; decisão inalterada (ver índice).
+
 ## Contexto
 
 A SPA nasce sem código e sem repositório git. O núcleo (`docs/spa-nucleo.md`) fixa
@@ -11,7 +13,7 @@ Vite, React, TypeScript `strict`, ESLint, Prettier, Tailwind e React Router, mas
 qual gerenciador de pacotes nem qual versão de Node sustentam esse conjunto. Sem essa
 fixação, cada colaborador ou agente escolhe o próprio: aparecem lockfiles concorrentes
 (`package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`), o CI e a Vercel resolvem versões
-diferentes das da máquina de desenvolvimento, e o plano (§6) já pressupõe `npm run idp`
+diferentes das da máquina de desenvolvimento, e o plano já pressupõe `npm run idp`
 para o IdP fake. O Vite 7 exige Node 20.19+ ou 22.12+. A Vercel oferece Node 22 como
 runtime de build suportado. O `CLAUDE.md` pede a solução mais simples que funciona.
 
@@ -30,7 +32,7 @@ Positivas:
   o reconhecem sem configuração.
 - Uma versão de Node para dev, CI e Vercel, o que elimina a classe de erro "funciona na
   minha máquina" por diferença de runtime.
-- O plano (§6, `npm run idp`) e os scripts de qualidade (`typecheck`, `lint`, `build`)
+- O plano (`npm run idp`) e os scripts de qualidade (`typecheck`, `lint`, `build`)
   ficam com um único prefixo.
 
 Negativas:

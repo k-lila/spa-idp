@@ -4,12 +4,14 @@
 
 Aceito — 2026-09-15
 
+Revisão — 2026-09-29: referências a documentos de trabalho suprimidas; decisão inalterada (ver índice).
+
 ## Contexto
 
-O `monolito-idp` está offline e sem endereço. A SPA precisa exercitar o fluxo real de
+O IdP está offline e sem endereço. A SPA precisa exercitar o fluxo real de
 redirect + PKCE (I2), discovery (I5) e validação do `id_token` (I4) antes de o back-end
-existir, e os testes e2e (plano §8, etapa 7) precisam de um IdP reproduzível na máquina e
-no CI. O plano (§6) pede um servidor Node em `dev/idp-fake/` com `oidc-provider`,
+existir, e os testes e2e precisam de um IdP reproduzível na máquina e
+no CI. O plano pede um servidor Node em `dev/idp-fake/` com `oidc-provider`,
 publicado em `http://localhost:9000/o`. Faltava decidir a linguagem do fake (TS rodado por
 `node` falha em Node 22.13–22.17 e não passa por `tsc -b`, que só inclui `vite.config.ts`),
 onde vivem suas dependências, como montar o sufixo `/o`, e até onde o fake deve espelhar o
@@ -42,16 +44,16 @@ Positivas:
 - Sobe com `node` puro em qualquer Node 22 suportado; nenhuma flag, nenhum `tsx`,
   nenhum passo de build. Um lockfile e um `npm install` para SPA e fake.
 - O `id_token` do fake tem a mesma forma do real (claims no token, RS256, `iss` com
-  `/o`), então a etapa 3 e os e2e testam o caminho que a produção vai usar.
+  `/o`), então a integração do `oidc-client-ts` e os e2e testam o caminho que a produção vai usar.
 - Divergências deliberadas (rotas default, sem `end_session_endpoint`) policiam I5 e o
-  plano §2.4 em dev: hardcode de caminho ou logout inexistente quebra antes de chegar ao
+  "Sair" em dev: hardcode de caminho ou logout inexistente quebra antes de chegar ao
   back-end real.
 
 Negativas:
 
 - A fidelidade ao IdP real é mantida à mão em meia dúzia de opções; se o
-  `monolito-idp` mudar (habilitar logout, mudar claims), o fake passa e a produção falha.
-  A etapa 9 do plano existe para isso.
+  IdP mudar (habilitar logout, mudar claims), o fake passa e a produção falha.
+  A verificação contra o IdP real existe para isso.
 - Porta, `client_id` e `redirect_uri` estão duplicados entre `server.js` e
   `.env.example`; mudar um exige mudar o outro.
 - O `sub` não é um literal fixo; e2e e testes manuais precisam digitar o mesmo login.
@@ -62,8 +64,8 @@ Negativas:
   cookie de sessão do IdP viaja normalmente entre os dois. Em produção (Vercel × Render) é
   cross-site e o cookie não viaja. Qualquer mecanismo de sessão que dependa desse cookie —
   `signinSilent` em iframe com `prompt=none`, por exemplo — passa em dev e falha em produção;
-  o fake não policia esse acoplamento, que é justamente o que define o modelo do projeto
-  (`docs/backend-mapa-comportamento.md`). A decisão do plano §7.2 deve ser tomada sabendo disso.
+  o fake não policia esse acoplamento, que é justamente o que define o modelo do projeto.
+  A decisão sobre a sessão no reload deve ser tomada sabendo disso.
 
 ## Alternativas consideradas
 
@@ -77,6 +79,6 @@ Negativas:
   Descartado: mesmo comportamento que o `express`, mas com um truque que exige comentário;
   `express` é a receita documentada do `oidc-provider`.
 - **Gerar a chave com `jose`** — como o plano sugeria. Descartado: `node:crypto` gera o
-  mesmo JWK sem dependência; `jose` só entra na SPA se o §7.1 aprovar.
+  mesmo JWK sem dependência; `jose` só entra na SPA se a decisão sobre a verificação da assinatura do `id_token` o aprovar.
 - **Reproduzir as rotas do IdP real (`/authorize/`, `/userinfo/`)** — logs mais
-  familiares. Descartado: esconderia um hardcode de caminho na SPA até a etapa 9.
+  familiares. Descartado: esconderia um hardcode de caminho na SPA até a verificação contra o IdP real.

@@ -4,15 +4,17 @@
 
 Aceito — 2026-09-15
 
+Revisão — 2026-09-29: referências a documentos de trabalho suprimidas; decisão inalterada (ver índice).
+
 ## Contexto
 
 I6 exige que `issuer`, `client_id` e `redirect_uri` venham de variáveis de ambiente
-`VITE_*` e nunca sejam fixados no código. O plano (§4) acrescenta `VITE_IDP_ACCOUNT_URL`
+`VITE_*` e nunca sejam fixados no código. O plano acrescenta `VITE_IDP_ACCOUNT_URL`
 e pede que a falta de variável falhe no boot, não na primeira chamada, e sugere zod para
 isso. O Vite substitui `import.meta.env.VITE_X` estaticamente e tipa tudo como `any`; sem
 um ponto único de leitura, cada módulo leria a variável por conta própria, com fallback
-("`?? "http://localhost:9000/o"`") que viola I6 silenciosamente. O zod entra no projeto na
-etapa 4 (claims), e o `CLAUDE.md` pede a solução mais simples que funciona.
+("`?? "http://localhost:9000/o"`") que viola I6 silenciosamente. O zod entra no projeto com a
+validação das claims, e o `CLAUDE.md` pede a solução mais simples que funciona.
 
 ## Decisão
 
@@ -24,7 +26,7 @@ faltante no topo do módulo — a aplicação não renderiza. Exporta um único 
 `idpAccountUrl`; `scope` é constante do contrato (`openid profile email`), não variável de
 ambiente. `src/vite-env.d.ts` declara as quatro variáveis como `string | undefined`.
 `main.tsx` importa `config` antes de `createRoot`. Não usaremos zod para configuração,
-nem agora nem na etapa 4: zod fica reservado para dados que cruzam a rede (I7). Nenhuma
+nem agora nem na validação das claims: zod fica reservado para dados que cruzam a rede (I7). Nenhuma
 variável recebe valor default. `.env.example` é commitado com os valores do fake;
 `.env.local` é o arquivo de trabalho e é ignorado pelo git.
 
@@ -34,9 +36,9 @@ Positivas:
 
 - Uma variável faltando aparece como uma linha de erro com o nome dela, no boot, em dev
   e em preview da Vercel — não como um redirect para `undefined/.well-known/...`.
-- Só um arquivo conhece `import.meta.env`; a etapa 3 (`userManager`) e as seguintes
+- Só um arquivo conhece `import.meta.env`; o `userManager` e os módulos seguintes
   consomem `config` tipado.
-- Sem dependência e sem schema para três strings; a decisão da etapa 4 sobre zod não
+- Sem dependência e sem schema para três strings; a decisão sobre zod nas claims não
   precisa revisitar este arquivo.
 
 Negativas:
@@ -45,7 +47,7 @@ Negativas:
   para configuração ausente. Aceito: é erro de deploy, não de usuário.
 - Validação de URL é sintática; um issuer com barra final ou host errado só aparece no
   discovery.
-- O texto do plano (§4 e §5) que menciona zod para `config.ts` fica desatualizado.
+- O texto do plano que menciona zod para `config.ts` fica desatualizado.
 
 ## Alternativas consideradas
 

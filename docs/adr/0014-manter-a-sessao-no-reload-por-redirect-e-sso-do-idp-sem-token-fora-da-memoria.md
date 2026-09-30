@@ -1,19 +1,20 @@
-# 0014. Manter a sessão no reload por redirect ao IdP e SSO, sem token fora da memória, e fechar o plano §7.2
+# 0014. Manter a sessão no reload por redirect ao IdP e SSO, sem token fora da memória, e fechar a questão da sessão no reload
 
 ## Status
 
 Aceito — 2026-09-16
 
+Revisão — 2026-09-29: referências a documentos de trabalho suprimidas; decisão inalterada (ver índice).
+
 ## Contexto
 
-O plano §7.2 deixou "sessão no reload" em aberto. `restoreSession()` nasceu como ponto de encaixe
+O plano deixou "sessão no reload" em aberto. `restoreSession()` nasceu como ponto de encaixe
 (ADR 0006): consulta só o `userStore` em memória e, após reload, responde `null`; a rota protegida
 dispara o redirect ao IdP (I8, ADR 0010) e o IdP devolve por SSO. O plano listou dois candidatos —
 silent auth por `prompt=none` e renovação via back-end com cookie — e deixou a escolha ao
-back-end. O `contrato-frontend.md` §5.4 recomenda manter o desenho atual e registrá-lo por ADR.
+back-end. O acordo entre os projetos recomenda manter o desenho atual e registrá-lo por ADR.
 
-Fatos do IdP que pesam (`contrato-frontend.md` §1; `docs/contrato-backend.md` do IdP, §2,
-§5.3, §5.4): o cookie de sessão viaja na navegação top-level cross-site porque é `SameSite=Lax` —
+Fatos do IdP que pesam: o cookie de sessão viaja na navegação top-level cross-site porque é `SameSite=Lax` —
 por default do Django, não por declaração: `SESSION_COOKIE_SAMESITE`, `SESSION_COOKIE_AGE` (14 dias,
 não deslizantes) e `SESSION_EXPIRE_AT_BROWSER_CLOSE` não estão no `settings.py` nem em teste; o
 DOT devolve um `refresh_token` em toda troca de `code`, e ele não expira
@@ -23,7 +24,7 @@ requisições por minuto por origem de rede (429); o DOT pede consentimento em t
 `/o/authorize/` (`REQUEST_APPROVAL_PROMPT="force"`) e o IdP vai marcar `skip_authorization=True`
 na `Application` da SPA; não há `end_session_endpoint` nem check-session.
 
-Restrições acumuladas em `.claude/memory/decisions.md`, todas endereçadas a §7.2: TASK-002 — o
+Restrições acumuladas em `.claude/memory/decisions.md`, todas endereçadas à sessão no reload: TASK-002 — o
 fake é same-site com a SPA, e um `signinSilent`/iframe `prompt=none` passaria em dev e falharia
 em produção; TASK-003 — `AuthProvider` chama `restoreSession()` em todo boot, inclusive em
 `/callback`, e o `.then(setState)` concorre com `userLoaded`, seguro só porque `getUser()` resolve
@@ -47,7 +48,7 @@ cookie de sessão dele. Nenhum token sai da memória (I3): sem `sessionStorage`,
 sem iframe; `automaticSilentRenew`, `monitorSession` e `loadUserInfo` continuam `false`. O
 `refresh_token` que o DOT devolve em toda troca de `code` é recebido e fica no `User` em memória
 (`InMemoryWebStorage`), mas a SPA nunca o usa: não há renovação silenciosa nem chamada a
-`/o/revoke_token/` (ADR 0010). O plano §7.2 fica fechado.
+`/o/revoke_token/` (ADR 0010). A questão da sessão no reload fica fechada.
 
 Uma adequação de uma linha acompanha, porque o mecanismo só se sustenta com ela: `Landing`
 distingue `loading` de `anonymous` — em `loading` renderiza `null`, o padrão de `RequireAuth` e
@@ -57,11 +58,11 @@ sabe-se que não há sessão em memória; `authenticated` = claims validadas. O 
 de rede da biblioteca acompanha na ADR 0015.
 
 A ausência de consentimento a cada F5 **não** é garantida pela SPA: depende de
-`skip_authorization=True` na `Application` da SPA (`contrato-backend.md` §5.3; ADR do IdP sobre
-`skip_authorization`, devida lá, tabela §8). Até lá, ou se a marcação faltar, o reload passa pela
+`skip_authorization=True` na `Application` da SPA (ADR do IdP sobre
+`skip_authorization`, devida lá). Até lá, ou se a marcação faltar, o reload passa pela
 tela de consentimento — um passo a mais no mesmo redirect top-level, sem mudança de código.
 
-Disposição dos itens "adiado p/ §7.2":
+Disposição dos itens adiados para a sessão no reload:
 
 - Dissolvidos: TASK-002 (same-site do fake) — não há silent auth para o fake mascarar; TASK-003
   (`restoreSession()` com rede × `userLoaded`) — não há rede, e `Landing` distingue `loading`, o
@@ -79,7 +80,7 @@ Disposição dos itens "adiado p/ §7.2":
 Limite conhecido: não há estado "pendente" durante o `signin()` — em `anonymous` o botão continua
 na tela até o redirect sair ou a chamada rejeitar (fora do escopo desta decisão).
 
-Contraparte: `contrato-backend.md` §5.3 (`skip_authorization`) e §5.4 (`SameSite=Lax`; não mudar
+Contraparte: o acordo entre os projetos sobre `skip_authorization` e `SameSite=Lax` (não mudar
 para `Strict`). Nenhuma mudança de código, `Application`, CORS ou claim no IdP decorre daqui. Duas
 notas cruzadas ficam devidas ao IdP, na ADR de `skip_authorization`: declarar e testar as três
 settings do cookie de sessão, e dar a `REFRESH_TOKEN_EXPIRE_SECONDS` um valor finito.
@@ -94,7 +95,7 @@ Positivas:
   as garantias de estado das ADRs 0007 e 0010 continuam válidas sem releitura.
 - `Landing` nunca mostra "Entrar" antes de saber; o contrato de `loading` deixa de depender de a
   resposta ser rápida.
-- Quatro restrições "adiado p/ §7.2" dissolvidas; as duas que ficam têm nome e detector.
+- Quatro restrições adiadas para a sessão no reload dissolvidas; as duas que ficam têm nome e detector.
 
 Negativas:
 
@@ -106,7 +107,7 @@ Negativas:
   `/o/token/`, o erro genérico do `Callback`, sem retentativa; em `/o/authorize/`, navegação
   top-level, o JSON do limitador é renderizado pelo navegador na origem do IdP, fora da SPA —
   "Voltar" com bfcache cai em `RequireAuth` com "O login não foi concluído."; sem bfcache,
-  recarrega e dispara novo `signin()` (`contrato-frontend.md` §5.5).
+  recarrega e dispara novo `signin()`.
 - Cada F5 grava no IdP um `AccessToken`, um `RefreshToken` e um `IDToken` novos. O refresh não
   expira, `cleartokens` não recolhe refresh vivos nem os access/id vinculados, e a SPA nunca chama
   `/o/revoke_token/`: as tabelas crescem linearmente com os reloads. A mitigação é do IdP
@@ -127,20 +128,20 @@ Negativas:
   `restoreSession()` exige ADR substituta e um placeholder.
 - A sessão morre com a aba e com o reload; recuperação após um crash é reautenticar, transparente
   só enquanto o SSO do IdP funcionar.
-- Ficam defasadas, e imutáveis: ADR 0006 ("`restoreSession()` e o `userStore` são o único ponto a
-  tocar em §7.2"; "reload apaga a sessão até §7.2"), ADR 0010 (Negativas: "a ADR de §7.2 deve
+- Ficam defasadas, e imutáveis: ADR 0006 (o ponto único a tocar quando a sessão no reload fosse
+  decidida; o reload que apaga a sessão até lá), ADR 0010 (Negativas: "a ADR da sessão no reload deve
   tratar isso") e ADR 0013 (Negativas sobre entradas futuras por `_buildUser`). Quem as ler
   precisa chegar até aqui.
 
 ## Alternativas consideradas
 
-- **Silent auth por `prompt=none`** (plano §7.2) — em redirect top-level continua sendo uma ida ao
+- **Silent auth por `prompt=none`** (candidato do plano) — em redirect top-level continua sendo uma ida ao
   IdP por reload, com o mesmo custo do SSO e sem tolerar a tela de consentimento (viraria
   `consent_required`); em iframe (`signinSilent`) depende de cookie em contexto de terceiro, que
   os navegadores bloqueiam cross-site e que o fake same-site mascara (TASK-002). Descartada.
 - **Renovação via back-end** (cookie HttpOnly + endpoint próprio) — exige cookie cross-site
   (`SameSite=None`) e um endpoint que o IdP não tem, ou um BFF que a SPA não tem. O
-  `contrato-backend.md` não prevê nenhum dos dois. Descartada.
+  IdP não prevê nenhum dos dois. Descartada.
 - **`sessionStorage` + uso do `refresh_token`** — sobreviveria ao reload sem rede. Descartada:
   viola I3 e deixa o `refresh_token` perpétuo legível no ato por qualquer XSS, sem esperar reload;
   além disso, a entrada por refresh passa por `_buildUser` sem `verifyIdToken` nem `removeUser()`

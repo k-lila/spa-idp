@@ -2,19 +2,17 @@
 
 ## Status
 
-Proposto — 2026-09-24
+Aceito — 2026-09-29
 
-Contraparte da ADR (Architecture Decision Record) 0027 do provedor de identidade (IdP, de
-_Identity Provider_), também proposta.
-As duas passam a Aceito juntas, depois do ensaio descrito no passo 4 de
-`docs/plano-implantacao.md` do IdP. Esta ADR não emenda nenhuma outra: a ADR 0017 fixou a forma
+Proposta em 2026-09-24. Contraparte da ADR (Architecture Decision Record) 0027 do provedor de
+identidade (IdP, de _Identity Provider_), aceita em 2026-09-28. Esta ADR não emenda nenhuma outra: a ADR 0017 fixou a forma
 do issuer, e não o lugar em que o IdP roda, e a menção à AWS (Amazon Web Services) nas ADRs 0015,
 0016 e 0017 fica como registro do destino da época.
 
 ## Contexto
 
 Esta aplicação de página única (SPA, de _Single-Page Application_) é a relying party (RP) do IdP.
-As ADRs 0016 e 0017 e `docs/contrato-frontend.md` supõem o IdP de produção numa
+As ADRs 0016 e 0017 supõem o IdP de produção numa
 instância da AWS. A ADR 0027 do IdP troca esse destino pela máquina do dono do projeto, publicada
 por um túnel nomeado da Cloudflare sob o domínio próprio que a ADR 0025 do IdP exige, numa zona
 da Cloudflare só do IdP. A cadeia passa a ser navegador → borda da Cloudflare → túnel →
@@ -64,8 +62,7 @@ SPA.
   entra no repositório (I6).
 - **Conferência byte a byte.** Antes de gravar `VITE_OIDC_ISSUER` no painel, o valor é comparado
   com o `issuer` que `https://<PUBLIC_HOST>/o/.well-known/openid-configuration` publica. A
-  consulta é feita de fora da máquina do dono, pela borda (regra 4 da ADR 0025 do IdP; passo 6 do
-  plano do IdP). O host é o nome do domínio próprio, e nunca um nome de `trycloudflare.com` nem o
+  consulta é feita de fora da máquina do dono, pela borda (regra 4 da ADR 0025 do IdP). O host é o nome do domínio próprio, e nunca um nome de `trycloudflare.com` nem o
   destino `cfargotunnel.com` do registro de DNS (Domain Name System) do túnel.
 - **Riscos aceitos.** A SPA aceita, como o dono aceitou na ADR 0027, que a borda veja os tokens e
   o cookie de sessão do IdP e possa servir descoberta e JWKS sob o domínio dele, e que a chave de
@@ -114,9 +111,7 @@ Negativas:
   `/o/token/` ou `/o/userinfo/`, a resposta sai da borda sem cabeçalho de CORS, e a SPA vê erro
   de rede, e não 401. O sinal é o callback falhar enquanto a navegação até `/o/authorize/`
   funciona. A configuração da zona vive fora dos dois repositórios, e nada a verifica.
-- `docs/contrato-frontend.md`, `docs/implementacao-contrato.md`, `docs/spa-nucleo.md` e o
-  `CLAUDE.md` citam a AWS até a revisão do passo 5 do plano do IdP. As ADRs 0015, 0016 e 0017,
-  aceitas, continuam citando.
+- As ADRs 0015, 0016 e 0017, aceitas, continuam citando a AWS como destino da época.
 
 ## Alternativas consideradas
 
