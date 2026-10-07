@@ -8,6 +8,10 @@ const SPA_ENV = {
   VITE_OIDC_CLIENT_ID: "spa-local",
   VITE_OIDC_REDIRECT_URI: "http://localhost:5173/callback",
   VITE_OIDC_POST_LOGOUT_REDIRECT_URI: "http://localhost:5173/",
+  // Vazios desligam o https de vite.config.ts: os e2e ficam em http contra o fake mesmo com o
+  // .env.local apontado ao IdP real (process.env vence .env* também sem prefixo, mesma linha).
+  SPA_DEV_TLS_CERT: "",
+  SPA_DEV_TLS_KEY: "",
 };
 
 export default defineConfig({

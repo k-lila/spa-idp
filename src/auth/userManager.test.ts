@@ -294,6 +294,74 @@ describe("signin", () => {
   });
 });
 
+describe("signup", () => {
+  function mockOidcClientTsForSignup(signinRedirect: ReturnType<typeof vi.fn>) {
+    vi.doMock("oidc-client-ts", async (importOriginal) => {
+      const actual = await importOriginal<typeof import("oidc-client-ts")>();
+      return {
+        ...actual,
+        UserManager: vi.fn().mockImplementation(function () {
+          return {
+            signinRedirectCallback: vi.fn(),
+            removeUser: vi.fn(),
+            signinRedirect,
+            getUser: vi.fn(),
+            events: { addUserLoaded: vi.fn(() => vi.fn()) },
+          };
+        }),
+      };
+    });
+  }
+
+  it("(i) signup() chama signinRedirect 1x com prompt 'create', nonce não vazia e sem state", async () => {
+    const signinRedirect = vi.fn().mockResolvedValue(undefined);
+    mockOidcClientTsForSignup(signinRedirect);
+
+    const { signup } = await import("./userManager");
+    await signup();
+
+    expect(signinRedirect).toHaveBeenCalledTimes(1);
+    const arg = signinRedirect.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(arg.prompt).toBe("create");
+    expect(typeof arg.nonce).toBe("string");
+    expect((arg.nonce as string).length).toBeGreaterThan(0);
+    expect("state" in arg).toBe(false);
+  });
+
+  it("(ii) signin('/a') seguido de signup() antes de resolver: 1 chamada (a de signin) e mesma promessa", async () => {
+    let resolveRedirect: () => void = () => {};
+    const pending = new Promise<void>((resolve) => {
+      resolveRedirect = resolve;
+    });
+    const signinRedirect = vi.fn().mockReturnValue(pending);
+    mockOidcClientTsForSignup(signinRedirect);
+
+    const { signin, signup } = await import("./userManager");
+    const first = signin("/a");
+    const second = signup();
+
+    expect(second).toBe(first);
+    expect(signinRedirect).toHaveBeenCalledTimes(1);
+    const arg = signinRedirect.mock.calls[0]?.[0] as { state: unknown; prompt?: string };
+    expect(arg.state).toEqual({ returnTo: "/a" });
+    expect(arg.prompt).toBeUndefined();
+
+    resolveRedirect();
+    await Promise.all([first, second]);
+  });
+
+  it("(iii) depois de resolver, um novo signup() chama signinRedirect de novo", async () => {
+    const signinRedirect = vi.fn().mockResolvedValue(undefined);
+    mockOidcClientTsForSignup(signinRedirect);
+
+    const { signup } = await import("./userManager");
+    await signup();
+    await signup();
+
+    expect(signinRedirect).toHaveBeenCalledTimes(2);
+  });
+});
+
 describe("signout", () => {
   function mockOidcClientTsForSignout(
     signoutRedirect: ReturnType<typeof vi.fn>,

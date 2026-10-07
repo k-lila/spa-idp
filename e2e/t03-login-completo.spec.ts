@@ -20,6 +20,10 @@ test("login completo com fake-user-1 chega a /app com id_token e userinfo iguais
   // de fato no caminho feliz, e não depois que a SPA já decidiu que a sessão é válida.
   const events: string[] = [];
   page.on("request", (req) => events.push(`req:${new URL(req.url()).pathname}`));
+  // Só GET: o preflight (OPTIONS) de /api/conta/ responderia antes e esvaziaria a prova de T-06.
+  page.on("response", (res) => {
+    if (res.request().method() === "GET") events.push(`res:${new URL(res.url()).pathname}`);
+  });
   page.on("framenavigated", (frame) => {
     if (frame === page.mainFrame()) events.push(`nav:${new URL(frame.url()).pathname}`);
   });
@@ -45,6 +49,12 @@ test("login completo com fake-user-1 chega a /app com id_token e userinfo iguais
 
   await expect(page.getByRole("button", { name: "Sair" })).toBeVisible();
 
+  // Saudação pelo first_name do fake (sem apelido), link para a conta e nenhuma faixa de
+  // confirmação: fake-user-1 tem e-mail confirmado.
+  await expect(page.getByText("Olá, Usuária!")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Minha conta" })).toBeVisible();
+  await expect(page.getByText("Confirme seu e-mail")).toHaveCount(0);
+
   // I3: o estado do redirect (state/nonce/code_verifier) foi consumido e apagado pela lib.
   const storage = await page.evaluate(() => ({
     localLength: localStorage.length,
@@ -58,4 +68,12 @@ test("login completo com fake-user-1 chega a /app com id_token e userinfo iguais
   const appNavIndex = events.indexOf("nav:/app");
   expect(jwksIndex).toBeGreaterThanOrEqual(0);
   expect(jwksIndex).toBeLessThan(appNavIndex);
+
+  // T-06: a guarda dos termos busca a conta e recebe a resposta antes de qualquer pedido ao userinfo
+  // (/o/me): na montagem, nenhuma outra chamada autenticada corre junto com o GET da conta.
+  const contaResIndex = events.indexOf("res:/api/conta/");
+  const userinfoReqIndex = events.indexOf("req:/o/me");
+  expect(contaResIndex).toBeGreaterThanOrEqual(0);
+  expect(userinfoReqIndex).toBeGreaterThanOrEqual(0);
+  expect(contaResIndex).toBeLessThan(userinfoReqIndex);
 });

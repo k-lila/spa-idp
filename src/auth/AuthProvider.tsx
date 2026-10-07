@@ -3,7 +3,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import type { User } from "oidc-client-ts";
 import { AuthContext, type AuthState } from "./AuthContext";
 import { claimsSchema } from "./claims";
-import { restoreSession, signin, signout, userManager } from "./userManager";
+import { restoreSession, signin, signout, signup, userManager } from "./userManager";
 
 // `userLoaded` dispara antes de completeSignin() resolver: este é o portão que impede uma
 // identidade rejeitada de virar `authenticated` (I7).
@@ -36,5 +36,5 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [queryClient]);
 
-  return <AuthContext value={{ ...state, signin, signout }}>{children}</AuthContext>;
+  return <AuthContext value={{ ...state, signin, signup, signout }}>{children}</AuthContext>;
 }

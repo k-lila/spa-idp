@@ -8,6 +8,12 @@ Configuração: copie `.env.example` para `.env.local` (ignorado pelo git). Sem 
 `VITE_*` a aplicação não sobe. Em dev, rode `npm run idp` em um terminal e `npm run dev` em
 outro; login no fake: `fake-user-1`, senha qualquer.
 
+Contra o IdP real de dev (`https://localhost/o`, servido pelo proxy do IdP): no `.env.local`, as
+variáveis `VITE_OIDC_*` do bloco comentado do `.env.example` e `SPA_DEV_TLS_CERT` e
+`SPA_DEV_TLS_KEY` apontando para o certificado gerado por `mkcert localhost`, fora do repositório;
+com elas, `npm run dev` serve a SPA em `https://localhost:5173`. O navegador precisa confiar na CA
+local do IdP (`ca-local.crt`). Os e2e seguem em `http://localhost:5173` contra o fake.
+
 | Script                     | Faz                                                           |
 | -------------------------- | ------------------------------------------------------------- |
 | `npm run dev`              | dev server do Vite                                            |
@@ -46,13 +52,13 @@ aviso (ADR 0016).
   Vercel, **por ambiente**. Production: `https://<dominio-do-idp>/o` (sem barra final, ADR 0017),
   o `client_id` de produção e `https://<spa>/callback`. Preview: nenhuma — a build passa, mas a
   aplicação lança no boot (`src/config.ts`) e não autentica, de propósito. Development: os do IdP
-  local (`http://localhost:8000/o`). Nunca o mesmo valor em dois ambientes; nunca um
+  local (`https://localhost/o`). Nunca o mesmo valor em dois ambientes; nunca um
   `.env.production` no repositório. O formulário de variáveis do painel marca os três ambientes
   por padrão: desmarcar Preview ao cadastrar os valores de produção.
 - Node 22: a Vercel ignora `.nvmrc` e lê `engines` do `package.json` (`>=22.13 <23`). Conferir a
   versão no log da build; o campo "Node.js Version" do painel fica em 22.x, redundante.
 - Previews não autenticam: a origem muda a cada deploy e o IdP compara origem (CORS) e
   `redirect_uri` por igualdade exata. Nunca pedir `*.vercel.app` ao IdP; se for preciso, um alias
-  estável ganha cliente próprio no IdP (`docs/contrato-frontend.md` §4).
+  estável ganha cliente próprio no IdP (`docs/contrato-idp.md` §2).
 
 Arquitetura, invariantes e decisões: `docs/` (comece por `docs/spa-nucleo.md`; ADRs em `docs/adr/`).

@@ -2,12 +2,14 @@
 
 SPA em React + TypeScript + Tailwind que atua como **relying party (RP) OIDC** do provedor de
 identidade (IdP) `monolito-idp` (Django), em origem diferente: a SPA na Vercel, o IdP servido pelo
-Cloudflare Tunnel. Ela não coleta senha nem escreve no diretório de usuários: autentica por
-redirect + PKCE, guarda tokens só em memória e exibe a identidade que o IdP afirma.
+Cloudflare Tunnel. Ela não coleta senha e só escreve na própria conta da pessoa, pela API de
+conta do IdP: autentica por redirect + PKCE, guarda tokens só em memória e exibe a identidade que
+o IdP afirma.
 
 Está em produção na Vercel, integrada ao IdP real. Em desenvolvimento, a SPA fala com o IdP real
-em `http://localhost:8000/o`, e os e2e rodam contra o IdP fake de `dev/idp-fake/`. Prefira sempre
-a solução mais simples que cumpre o contrato; não faça over-engineering.
+em `https://localhost/o`, servida em `https://localhost:5173`, e os e2e seguem em
+`http://localhost:5173` contra o IdP fake de `dev/idp-fake/`. Prefira sempre a solução mais
+simples que cumpre o contrato; não faça over-engineering.
 
 ## Sobre o projeto
 
@@ -19,14 +21,15 @@ a solução mais simples que cumpre o contrato; não faça over-engineering.
 | `docs/contrato-idp.md` | O contrato com o IdP: registro, variáveis, fluxo, claims, tempos de vida, o que muda nos dois lados |
 | `docs/arquitetura.md` | Mapa de arquivos, camadas, estado, fluxos e ambientes |
 | `docs/seguranca.md` | Controles implementados, modelo de ameaças e lacunas mapeadas |
-| `docs/adr/` | Decisões formais (0001–0019; template em `template-adr.md`) |
+| `docs/adr/` | Decisões formais (0001–0020; template em `template-adr.md`) |
 
 ### Decisões já fixadas
 
 - **D1:** camada OIDC com `oidc-client-ts`, não PKCE à mão (ADR 0006); `jose` verifica o
   `id_token` (ADR 0013).
-- **D2:** sem gestão de conta — nem na SPA, nem por link ao IdP, que não tem páginas de cadastro
-  ou edição de perfil. Contas são criadas pelo admin do IdP (ADR 0012).
+- **D2:** gestão de conta pelas telas da SPA, sobre a API de conta do IdP (scope `conta`), e pelas
+  páginas do IdP para tudo o que pede senha; nenhum campo de senha na SPA (ADR 0020, que substitui
+  a 0012).
 - **Sessão no reload:** redirect ao IdP + SSO; tokens só em memória, nada em `sessionStorage`; o
   `refresh_token` que o IdP devolve é recebido e nunca usado (ADR 0014).
 - **Sair:** logout iniciado pela RP, `signoutRedirect()` sem `state` (ADR 0019).

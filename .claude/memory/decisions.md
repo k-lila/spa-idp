@@ -42,6 +42,7 @@
 | 2026-09-17 | Fixar `VITE_OIDC_ISSUER` de produção na forma `https://<dominio-do-idp>/o`, sem barra final | docs/adr/0017-fixar-vite-oidc-issuer-de-producao-em-https-dominio-do-idp-barra-o-sem-barra-final.md |
 | 2026-09-29 | Aceitar o IdP de produção servido pelo Cloudflare Tunnel com o contrato inalterado (proposta em 2026-09-24; contraparte da ADR 0027 do IdP, aceita em 2026-09-28) | docs/adr/0018-aceitar-o-idp-de-producao-servido-pelo-cloudflare-tunnel-com-o-contrato-inalterado.md |
 | 2026-09-29 | Sair por logout iniciado pela RP com `signoutRedirect()` sem `state` (substitui a 0010; emenda a cláusula de logout da 0004; contraparte da ADR 0029 do IdP) | docs/adr/0019-sair-por-logout-iniciado-pela-rp-com-signoutredirect-sem-state.md |
+| 2026-10-06 | Abrir as telas de conta sobre a API de conta, com as páginas de senha no IdP (substitui a 0012; contraparte da ADR 0031 do IdP; **Proposto**, aceite conjunto pendente) | docs/adr/0020-abrir-as-telas-de-conta-sobre-a-api-de-conta-com-as-paginas-de-senha-no-idp.md |
 
 ---
 
@@ -315,4 +316,268 @@ memória — é sedimento.
     código é o sintoma.
   - Adiado, sem dono: as pendências herdadas (AC-11) — ramo "segundo 401 → falha sem redirect" e
     429 real — perdem esta tarefa como destino; candidatas a `/review` própria.
+- **Tipo:** decisão.
+
+## [2026-10-06] TASK-015 · Telas de conta — ponto de controle da F0 (ADR 0020 e documentação)
+
+- **Decisão:** a tarefa segue ativa (F1–F5 pendentes); esta entrada dá disposição aos apontamentos
+  da F0. Rota `/feature` completa na F0: PM → gate (Fase 2) → architect → autorização → writer → QA
+  → writer (5 ajustes) → QA (APROVADO) → senso-critico (RESSALVA). Gravados a ADR 0020 "Proposto" e
+  os ajustes em `spa-nucleo.md`, `contrato-idp.md` (§11 nova, §1–§10 sem renumerar),
+  `arquitetura.md`, `seguranca.md`, `CLAUDE.md`, `.env.example` e `README.md` l.56; 0004, 0008 e
+  0012 intactas; typecheck e Vitest 107/107 verdes. Decisões do usuário no gate adversarial:
+  (1) aceita o risco do cadastro do IdP gravar aceite dos termos v1 enquanto a SPA de produção não
+  tem `/termos` nem `/privacidade`; (2) **commit local único depois de F5; push na `main` (que
+  publica na Vercel, ADR 0016) só depois do IdP em produção e do aceite conjunto 0020/0031**;
+  (3) D-6 mantida: a guarda fecha `/app` em qualquer erro do GET da conta, inclusive busca de fundo
+  com cache.
+- **ADR:** docs/adr/0020-abrir-as-telas-de-conta-sobre-a-api-de-conta-com-as-paginas-de-senha-no-idp.md
+  (Proposto; par com a 0031 do IdP; substituirá a 0012 no aceite conjunto).
+- **Propostas entregues ao usuário para o IdP:** `docs/integracao-rp.md` l.250–252 (a SPA não lê
+  `WWW-Authenticate` nem `Retry-After`); ADR 0031 l.14/l.161 e `docs/arquitetura.md` do IdP citarem
+  "ADR 0020 da SPA" pelo número. Efeito na SPA: nenhum.
+- **Tech-debt / melhorias:**
+  - Aceito e aplicado (PM, OBS): D-16 na ADR; 0020 sem §N, documento de trabalho nem diretório;
+    índice com 0020 Proposto e 0012 aceita.
+  - Aceito e aplicado (architect, MEDIO): 0020 emenda também a 0004; (BAIXO) pares mantêm
+    0012↔0023 até o aceite; `README.md` corrigido; `CLAUDE.md` sem "proposta".
+  - Aceito, diretriz da F1 (architect, BAIXO): `authSend` só alcança `config.idp.api`.
+  - Aceito e aplicado (QA, OBS ×5): escopo da emenda à 0004; `insufficient_scope` só no desafio;
+    proibição de `fetch` às páginas atribuída a I1/I8; pontuação em `seguranca.md`; quebra em 100
+    colunas.
+  - Aceito sem ação (architect/writer/QA, OBS): 0020 passa de uma página; parágrafos sob o status
+    (precedente 0019 e 0031 do IdP); título diferente do slug.
+  - Rejeitado (QA 2ª passagem, MEDIA): "a ADR 0031 ainda não existe com esse número" — existe no
+    disco do IdP.
+  - Adiado, fim da F4 (architect, writer, QA): os documentos descrevem código de F1–F4
+    (`config.idp`, `authSend`, `signup()`, `src/api/conta.ts`, `src/termos.ts`, `RequireTermos`,
+    páginas novas); conferir cada caminho e símbolo no código.
+  - Adiado, antes da F1 com a reconferência §3.5 (senso-critico, BAIXO): `contrato-idp.md` §11.3
+    diz "Cadastro só pelo `prompt=create`", mas a tela de login do IdP liga direto ao cadastro
+    (`login.html:50`); a volta da recuperação diz "Ir para a aplicação", não "Entrar".
+  - Aceito, risco do usuário (senso-critico, CRITICO): cadastro do IdP grava `termos_versao`
+    vigente (`cadastro.html:19`, `paginas.py:122-129`) com links a `{SPA_URL}/termos`; na janela
+    IdP-antes-da-SPA, aceite registrado sem texto publicado. Junto (OBS): a D-2 só vale no aceite
+    feito pela SPA.
+  - Aceito, decisão (2) acima (senso-critico, MEDIO): push = implantação na SPA. Também cobre a OBS
+    do núcleo afirmar a 0020 enquanto a 0012 está aceita: nada chega à `main` remota antes do aceite.
+  - Rejeitado por decisão do usuário (senso-critico, MEDIO): guarda só sem cache — D-6 mantida.
+  - Aceito sem ação (senso-critico, BAIXO): trava por URL — após `signin()` falho, "tentar de novo"
+    na guarda repete o erro até o reload.
+  - Adiado, encerramento da tarefa (PM, OBS): texto final dos termos e da privacidade vira
+    `BLOCK-NNN` de implantação depois da F5.
+  - Adiado, ato de aceite (architect, OBS): `CLAUDE.md` do observatório ganha o par IdP 0031 ↔ SPA
+    0020 — proposta ao observatório.
+- **Tipo:** decisão.
+
+## [2026-10-06] TASK-015 · Telas de conta — ponto de controle da F1 (fundação)
+
+- **Decisão:** F1 fechada, sem commit (commit único depois de F5). Regra nova da pessoa usuária:
+  a SPA segue **independente do IdP** — não lê o IdP; o que depende dele vai para
+  `docs/apontamentos.md` (A-01..A-10). Rota: writer → QA (RESSALVA, T-01..T-10) → writer (relatório
+  alinhado) → tester (verde, mutações) → QA (APROVADO) → senso-critico (RESSALVA) → decisão do
+  usuário → writer → tester (T-08'). Implementado: scope `conta`; `config.idp` sobre a origem do
+  issuer; `authSend(method, resource: keyof typeof config.idp.api, json?)` (chave, não URL: o tipo
+  impede escrita fora da API); `401` → `signin(path+search+hash)`; trava `spa.reauth` por URL do
+  recurso, apagada por qualquer resposta não-`401` da mesma URL; `403` sem ramo; claims novas
+  opcionais; `signup()` com `prompt: "create"`; fake com scope, claims, contas em memória,
+  `sem-aceite`/`nao-confirmado`, retirada de `create` e API `/api/conta/`. Verificado: typecheck,
+  lint, format; Vitest 133/133; e2e 9/9 (t03–t08). **Decisão do usuário (D-3):** tipo inesperado
+  ou `null` em `email_verified`, `nickname`, `updated_at` é descartado (`.optional().catch(undefined)`)
+  e não recusa o login; AC-13 revisado; ADR 0020, relatório e contrato §5 alinhados.
+- **ADR:** 0020 (Proposto) ajustada na D-3 e na emenda à 0008 ("resposta que não seja `401`").
+- **Tech-debt / melhorias:**
+  - Aceito e aplicado (QA, CRITICO): 9 falhas por mudança de especificação → T-01, T-02, T-03, T-07,
+    T-10; (QA, OBS) assinatura de `authSend` alinhada no relatório de trabalho.
+  - Aceito e aplicado (senso-critico, MEDIO): D-3 cumprida no código (decisão do usuário).
+  - Aceito e aplicado (senso-critico, coerência): D-14 "qualquer resposta não-`401`" na ADR 0020 e
+    no relatório.
+  - Aceito, A-09 e A-10 em `docs/apontamentos.md` (writer, QA, senso-critico): aproximações do fake
+    (mensagens, desafio sem token, parâmetros do `insufficient_scope`, ordem dos `403`, PATCH vazio,
+    `prompt` combinado); token revogado/vencido na API deve dar `401`, e a F5 deve exercitá-lo.
+  - Adiado, F2/F3 (QA, OBS; writer, OBS): trava guarda uma URL só — a guarda precisa terminar o
+    GET da conta antes de outras chamadas autenticadas; alternância não é cortada (consequência da
+    ADR 0020).
+  - Aceito sem ação, conferir no QA da F3 (senso-critico, BAIXO): trava deixada por "Reenviar"
+    (`POST confirmacao`) não é apagada pelos GETs e bloqueia um novo login futuro na mesma aba;
+    reload resolve.
+  - Adiado, F2/F5 (QA, OBS): e2e não prova a concessão do scope `conta` (o fake ignora scope
+    desconhecido); provado pelos e2e que chamam a API e pela integração real.
+  - Aceito sem ação (tester/QA, BAIXO/OBS): mock de `../config` em `http.test.ts` não checado por
+    tipo; `fakeConfig.oidc.scope` em `userManager.test.ts:12` sem `conta` (alinhar quando o arquivo
+    for tocado); `authSend` com `json` falsy definido vai ao ramo de corpo; `signup` no
+    `AuthProvider` sem teste próprio (repasse); `location` do jsdom persiste entre casos.
+  - Rejeitado (tester): "a produção parecia commitada" — HEAD segue 8396e9a.
+- **Tipo:** decisão.
+
+## [2026-10-06] TASK-015 · Telas de conta — ponto de controle da F2 (conta, guarda e termos)
+
+- **Decisão:** F2 fechada, sem commit. `src/api/conta.ts`, `src/termos.ts` (marcadores),
+  `RequireTermos` (guarda abaixo de `RequireAuth`; o GET da conta termina antes de a área montar),
+  `BotaoSair`, `AceiteDosTermos`, `/termos` e `/privacidade` públicas. A volta ao destino depois do
+  aceite fica na guarda, não na página (evita corrida: a guarda desmontaria a página antes do
+  `onSuccess` do `mutate`); destino aceito só `/app` ou `/app[/?#]…`. Fake com logins
+  `<estado>:<sufixo>` para e2e determinístico. Decisões do usuário no gate: (1) `/app/termos` tem
+  link "Excluir conta" para a página do IdP — recusar os termos não impede excluir; (2) a guarda
+  mostra a mensagem de 429; chave do limite perguntada ao IdP (A-12); (3) critério de "aceito"
+  durante a janela de troca de versão fica para antes da primeira troca (A-13; ADR 0020 e contrato
+  §10 com a ressalva). Verificado: typecheck, lint, format; Vitest 179/179; e2e 10/10 (t11 duas
+  vezes com servidor reaproveitado); mutações em T-01..T-04, T-03', T-04(g)', T-11, T-12;
+  RequireTermos e AceiteDosTermos estáveis em 16 execuções concorrentes.
+- **ADR:** 0020 (Proposto): saída para exclusão na Decisão; negativas com a troca de versão em
+  aberto e o formulário perdido por refetch que falha.
+- **Tech-debt / melhorias:**
+  - Aceito e aplicado (QA, MEDIA-1, BAIXA-2/3/4; QA 2ª, MEDIA Q-1, BAIXA Q-2/Q-3): fake com sufixo;
+    comentário e `destino` estrito; §4.3 alinhada; T-03' sem `flush` fixo; T-04(g)' com router
+    real.
+  - Aceito e aplicado (senso-critico, MEDIO ×2): link de exclusão; 429 na guarda + A-12.
+  - Adiado, antes da primeira troca de versão (senso-critico, MEDIO): A-13.
+  - Aceito, registrado (senso-critico, MEDIO): formulário perdido quando uma nova busca da conta
+    falha (D-6) — ADR 0020 e relatório §7; reavaliar na F3 se incomodar.
+  - Aceito, A-11 (writer): formato das datas e corpo dos `403` dependem do IdP.
+  - Aceito sem ação (QA, BAIXA): tela em branco em "Tentar de novo" sem cache (v5 volta a
+    `pending`); 204 seguido de GET sem aceite sem feedback; "Voltar ao início" vai a "/"; fake sem
+    `conta_inativa` (AC-17 só na unidade); `BotaoSair` sem teste isolado; sem e2e de falha do GET.
+  - Aceito sem ação (senso-critico, BAIXO): trocas de rota da guarda sem gestão de foco (padrão já
+    existente na SPA).
+  - Adiado, `/test-gap` própria (tester, OBS): `src/auth/idToken.test.ts` estoura 5 s gerando
+    chaves RSA sob 8 suítes concorrentes (4/16); `AceiteDosTermos.test.tsx` d/e/f ainda usam
+    `flush` fixo (verdes em 16/16).
+  - Adiado, próxima rodada de docs (writer, BAIXA): §7 do relatório sem a ressalva do A-13.
+- **Tipo:** decisão.
+
+## [2026-10-06] TASK-015 · Telas de conta — ponto de controle da F3 (Minha conta e área)
+
+- **Decisão:** F3 fechada, sem commit. `/app` com saudação (`nickname || first_name || email`),
+  faixa "Confirme seu e-mail" com "Reenviar" e link "Minha conta"; `/app/conta` com formulário de
+  nome, sobrenome e apelido (inicializado uma vez; não acompanha o refetch), "Acesso", links `<a>`
+  ao IdP, zona de perigo e avisos `?aviso=` lidos de um `Map` e retirados da URL. Só a guarda busca
+  a conta ao montar (`useConta(sub, {refetchOnMount:false})` nos filhos): 1 GET na chegada, 0 por
+  navegação, 1 por foco. Decisões do usuário no gate: PATCH só com os campos alterados (campo não
+  tocado não desfaz edição feita por outro caminho; no mesmo campo vence a última escrita — ADR
+  0020 e relatório §7); `onMutate` cancela a busca da conta em voo; aviso "Senha trocada." (sem
+  prometer encerrar sessões); foco devolvido (primeiro campo inválido ou "Salvar") e região viva
+  estável. Verificado: typecheck, lint, format; Vitest 236/236; e2e 13/13 (t10, t12 duas vezes);
+  mutações em T-01..T-18 da F3.
+- **ADR:** 0020 (Proposto): negativa "no mesmo campo, vence a última escrita".
+- **Tech-debt / melhorias:**
+  - Aceito e aplicado (QA, CRITICO W-01): GET da conta duplicado; (QA, OBS W-02) `MENSAGENS` como
+    `Map`; (QA 2ª, BAIXO) T-07a sem depender do fuso.
+  - Aceito e aplicado (senso-critico, MEDIO e BAIXO ×2): PATCH parcial; cancelamento no envio; foco
+    e anúncio; texto do aviso.
+  - Adiado, A-11 item (3) (senso-critico, BAIXO): semântica de `senha_alterada_em: null`; a SPA
+    mostra "nunca alterada" até a resposta do IdP.
+  - Aceito sem ação (senso-critico, OBS): links ao IdP descartam o digitado não salvo (mesma classe
+    da D-7).
+  - Adiado, F5 (QA, writer, OBS): aviso `senha-trocada` depende de a query sobreviver ao novo login
+    — conferir contra o IdP real.
+  - Aceito sem ação (QA, OBS): segundo `401` em "Reenviar" na mesma aba dá "Não foi possível
+    reenviar." sem re-auth; o foco seguinte re-autentica. `/o/me` refeito a cada ida a `/app`
+    (anterior à F3). Testes antigos de `Area` sem conta no cache. T-03 depende de
+    `visibilitychange` em `window`. Sem e2e de 400 no PATCH. `mutate({})` no hook enviaria corpo
+    vazio (só a tela impede). Dois `role="status"` com aviso presente.
+- **Tipo:** decisão.
+
+## [2026-10-06] TASK-015 · Telas de conta — ponto de controle da F4 (landing)
+
+- **Decisão:** F4 fechada, sem commit. Landing com "Criar conta" (`signup()`, `prompt=create`;
+  falha "Não foi possível iniciar o cadastro."; nota sobre sessão aberta no IdP), "Esqueci a
+  senha" (`<a>` para `config.idp.paginas.recuperarSenha`) e avisos `?email=`/`?conta=` lidos de um
+  `Map` e retirados da URL com `replace` (preserva outros parâmetros, hash e `state`); a limpeza não
+  roda quando autenticado (evita desfazer o `<Navigate to="/app">`). Conferência adiada da F0
+  feita: todo caminho e símbolo citado pelos documentos existe e bate com o código; 6 imprecisões
+  corrigidas em `arquitetura.md` e `seguranca.md`. Verificado: typecheck, lint, format; Vitest
+  254/254; e2e 18/18 (t09 e t13 duas vezes); mutações nos T de decisão da Landing.
+- **ADR:** nenhuma nova; 0020 segue "Proposto".
+- **Tech-debt / melhorias:**
+  - Aceito e aplicado (QA, OBS ×6 e BAIXA): defeito latente da Landing; documentação alinhada.
+  - Aceito, registrado como passo da F5 e A-14 (senso-critico, MEDIO): "Criar conta" com sessão
+    aberta no IdP — a nota da Landing e o contrato §4 afirmam algo que só o IdP real prova.
+  - Aceito, registrado como passo da F5 (senso-critico, MEDIO): Voltar depois da exclusão (ou da
+    troca de senha) pode trazer `/app/conta` do bfcache com os dados; se acontecer, reabrir a D-9.
+  - Aceito sem ação (senso-critico, BAIXO): sessão invisível do IdP (ADR 0014) desvia "Esqueci a
+    senha" e "Entre para continuar" para a conta da sessão aberta; a saudação mostra qual.
+  - Adiado, F5/aceite (QA, OBS): `CLAUDE.md` e `spa-nucleo.md` tratam a 0020 como vigente enquanto
+    ela é "Proposto" — o aceite conjunto deve acontecer antes ou junto do commit.
+  - Aceito sem ação (QA, OBS): `redirecting` compartilhado entre `signin` e `signup`;
+    `RequireTermos` importa `pages/BotaoSair` (camada invertida); dois hooks de aviso parecidos
+    (Landing preserva `state`, Conta não); t09 prova só o parâmetro `prompt=create`.
+- **Tipo:** decisão.
+
+## [2026-10-06] TASK-015 · Telas de conta — respostas do IdP aplicadas (antes da F5)
+
+- **Decisão:** a sessão do IdP respondeu os apontamentos (`docs/apontamentos.md`, "Resposta do
+  IdP"). Nada reabre decisão. Confirmados: A-04 (árvore de trabalho bate), A-10 (token revogado
+  dá `401`), A-12 (limite por IP do cliente via `CF-Connecting-IP`, não global), A-14 (`create`
+  com sessão aberta entra na conta existente). Resolvidos no IdP: A-01, A-02. Alinhado na SPA:
+  `senha_alterada_em: null` → "sem registro" (A-11.3); datas `isoformat()` UTC `+00:00` com
+  microssegundos opcionais já interpretadas por `new Date` (A-11.1); fake alinhado ao A-09 (desafio
+  do `403` sem `scope`, `401` sem `error` sem token, mensagens reais, `required` em `versao`, PATCH
+  vazio não grava); contrato §11 registra os detalhes. Verificado: Vitest 256/256, e2e 18/18.
+- **Tech-debt / melhorias:**
+  - Adiado, F5: parse de microssegundos só conferido no V8 — conferir num segundo navegador (se
+    falhar, a tela mostra "data indisponível").
+  - Aceito sem ação: o fake cria conta com `senha_alterada_em: null` (o IdP real carimba na
+    criação) — mantém o único caminho e2e do `null`; fixture de `http.test.ts:178` ainda com
+    `scope="conta"` (cosmético; fora da autorização); sem texto pt-BR para `required` (inalcançável
+    pela tela; reserva em inglês).
+  - Aceito sem ação: a frase "O campo Estado … não foi alterado" da resposta do IdP ficou
+    desatualizada; o documento é de trabalho e será retirado.
+- **Tipo:** decisão.
+
+## [2026-10-06] TASK-015 · Telas de conta — F5, integração contra o IdP real de desenvolvimento
+
+- **Decisão:** F5 verde contra o IdP real em `https://localhost/o` (árvore de trabalho, sem
+  commit), com a SPA de dev em `https://localhost:5173` (mkcert; `vite.config.ts` liga https só com
+  `SPA_DEV_TLS_CERT`/`SPA_DEV_TLS_KEY`; e2e seguem em http contra o fake). BLOCK-001 (IdP de dev só
+  aceita redirect https) resolvido pela SPA em https, decisão do usuário, sem ADR; o IdP ajustou
+  `CORS_ALLOWED_ORIGINS`, a Application de dev e `SPA_URL` (A-15). Passaram, por Playwright descartável
+  no scratchpad: cadastro por "Criar conta" volta logado (sub UUID); faixa e "Reenviar" (204);
+  confirmação → `/?email=confirmado` com aviso e query limpa; "Entrar" por SSO; faixa some; PATCH só
+  com o campo alterado e persistência no reload; troca de e-mail com aviso; troca de senha com
+  "Senha trocada." e data pt-BR; token revogado em outra aba → `401` (conta e userinfo juntos) →
+  um novo login, sem laço; Sair volta a `https://localhost:5173/`; "Esqueci a senha" → redefinição →
+  "Ir para a aplicação" → login com a senha nova; A-14 (Criar conta com sessão aberta entra na conta
+  existente); desativar → aviso, login recusado pelo IdP; apagar → aviso; Voltar depois de apagar
+  passa por páginas do IdP que pedem login e não mostra dados. A guarda faz um só GET da conta por
+  carga.
+- **Tech-debt / melhorias:**
+  - Não verificado: datas com microssegundos num segundo navegador (só Chromium instalado; o IdP
+    omitiu microssegundos nas datas vistas); guarda de termos com conta real de `termos_versao` vazio
+    (coberta pelo e2e t11 contra o fake).
+  - Inconclusivo, sem defeito observado: bfcache da D-9 no Chromium headless (o Voltar passou pelas
+    páginas do IdP).
+  - Pendente de autorização: `README.md:49` e relatório de pré-implementação (l.448) ainda citam
+    `http://localhost:8000/o`.
+  - Contas de teste `f5*-…@example.com` ficaram no banco local do IdP.
+- **Tipo:** decisão.
+
+## [2026-10-06] TASK-015 · Telas de conta — encerramento
+
+- **Decisão:** tarefa fechada pela pessoa usuária depois da F5 verde em desenvolvimento, sem
+  commit. Apontamentos e bloqueios sem pendência. O que a mantinha aberta passa a ser trabalho de
+  outro contexto, nesta ordem: (1) aceite conjunto das ADRs 0020 e 0031 do IdP (A-03); (2) commit
+  local único dos dois lados, só depois do aceite; (3) texto da versão 1 dos termos e da política
+  de privacidade em `src/termos.ts`, hoje com marcadores (A-08); (4) IdP em produção primeiro e
+  descoberta conferida: scope `conta`, `email_verified`, `create` (A-06); (5) push da SPA, que
+  publica na Vercel; (6) F5 repetida em produção e contrato comparado com o do IdP. Quem retomar
+  atualiza a linha da 0020 no índice com a data do aceite.
+- **ADR:** docs/adr/0020-abrir-as-telas-de-conta-sobre-a-api-de-conta-com-as-paginas-de-senha-no-idp.md
+  (índice acima; Proposto).
+- **Tech-debt / melhorias:**
+  - Adiado, integração: passos da jornada §11 não registrados contra o IdP real: guarda de
+    termos com conta real sem aceite (passo 1); `nickname` e e-mail de boas-vindas (passo 2);
+    aviso ao e-mail antigo e nova confirmação depois da troca (passo 3); e-mail em maiúsculas
+    (passo 5); mensagem própria de conta desativada, e-mail apagado livre para novo cadastro e
+    recusa para conta administrativa (passo 6); requisitos de senha nas páginas do IdP (§4.10).
+  - Adiado, integração: datas com microssegundos num segundo navegador; bfcache da D-9
+    inconclusivo no Chromium headless.
+  - Adiado, `/test-gap`: `idToken.test.ts` instável sob carga; espera de duração fixa em
+    `AceiteDosTermos.test` (d/e/f).
+  - Adiado, docs: §7 do relatório de pré-implementação com a ressalva do A-13; o relatório é
+    retirado quando o conteúdo estiver nos docs.
+  - Adiado, antes da 1ª troca de versão dos termos: A-13 (janela e critério de "aceito", no IdP).
+  - Resolvido depois da entrada da F5: `README.md` e relatório já citam o issuer de dev
+    `https://localhost/o`.
+  - Operação: contas de teste `f5*-…@example.com` no banco local do IdP.
 - **Tipo:** decisão.
