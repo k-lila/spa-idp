@@ -47,7 +47,7 @@ describe("config", () => {
     expect(config.oidc.clientId).toBe(VALID.VITE_OIDC_CLIENT_ID);
     expect(config.oidc.redirectUri).toBe(VALID.VITE_OIDC_REDIRECT_URI);
     expect(config.oidc.postLogoutRedirectUri).toBe(VALID.VITE_OIDC_POST_LOGOUT_REDIRECT_URI);
-    expect(config.oidc.scope).toBe("openid profile email");
+    expect(config.oidc.scope).toBe("openid profile email conta");
   });
 
   it.each(ENV_VARS)("(b) %s ausente rejeita com Error nomeando a variável", async (name) => {
@@ -83,5 +83,25 @@ describe("config", () => {
     const { config } = await import("./config");
 
     expect(config.oidc.clientId).toBe("nao-e-url");
+  });
+
+  it("(f) config.idp deriva da origem do issuer: sem o /o, com barra final e caminhos fixos", async () => {
+    stubAll({ VITE_OIDC_ISSUER: "https://issuer.example/o" });
+
+    const { config } = await import("./config");
+
+    expect(config.idp).toEqual({
+      api: {
+        conta: "https://issuer.example/api/conta/",
+        confirmacao: "https://issuer.example/api/conta/confirmacao/",
+        termos: "https://issuer.example/api/conta/termos/",
+      },
+      paginas: {
+        recuperarSenha: "https://issuer.example/accounts/password_reset/",
+        trocarSenha: "https://issuer.example/accounts/password_change/",
+        trocarEmail: "https://issuer.example/accounts/email/",
+        excluir: "https://issuer.example/accounts/excluir/",
+      },
+    });
   });
 });

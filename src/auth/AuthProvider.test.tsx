@@ -30,6 +30,7 @@ vi.mock("./userManager", () => ({
   },
   restoreSession: () => restoreSession(),
   signin: vi.fn(),
+  signup: vi.fn(),
   signout: () => signout(),
 }));
 

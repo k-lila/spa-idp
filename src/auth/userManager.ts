@@ -13,7 +13,7 @@ export const userManager = new UserManager({
   scope: config.oidc.scope,
   userStore: new WebStorageStateStore({ store: new InMemoryWebStorage() }), // I3: tokens só em memória
   // stateStore: default (sessionStorage) — guarda state/nonce/code_verifier SÓ durante o redirect
-  // (a página é descarregada; memória não sobreviveria). Não é token; plano §5 permite.
+  // (a página é descarregada; memória não sobreviveria). Não é token; I3 não se aplica (ADR 0006).
   automaticSilentRenew: false, // default da v3 é true e usaria o refresh_token (ADR 0014)
   monitorSession: false, // check-session iframe: inexistente no fake, cross-site em prod
   loadUserInfo: false, // userinfo é etapa 5
@@ -33,6 +33,20 @@ export function signin(returnTo?: string): Promise<void> {
       nonce: crypto.randomUUID(),
       state: returnTo === undefined ? undefined : { returnTo },
     })
+    .finally(() => {
+      redirecting = undefined;
+    });
+  return redirecting;
+}
+
+/**
+ * Criar conta: o pedido de autorização com `prompt=create` leva à página de cadastro do IdP, que
+ * retoma o pedido e volta a /callback (ADR 0020). Mesmo `redirecting` de signin(): um redirect por
+ * vez; sem destino, o callback cai em /app.
+ */
+export function signup(): Promise<void> {
+  redirecting ??= userManager
+    .signinRedirect({ nonce: crypto.randomUUID(), prompt: "create" })
     .finally(() => {
       redirecting = undefined;
     });

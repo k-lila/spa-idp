@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Area } from "./Area";
@@ -12,10 +12,24 @@ vi.mock("../auth/userManager", () => ({
   userManager: { metadataService: { getUserInfoEndpoint } },
 }));
 
-const { authGet } = vi.hoisted(() => ({ authGet: vi.fn() }));
+const { authGet, authSend } = vi.hoisted(() => ({ authGet: vi.fn(), authSend: vi.fn() }));
 vi.mock("../api/http", () => ({
   authGet,
+  authSend,
   UnauthorizedError: class UnauthorizedError extends Error {},
+}));
+
+// config.ts lança no import se faltarem VITE_*; a conta só lê config.idp.api (como em AceiteDosTermos).
+vi.mock("../config", () => ({
+  config: {
+    idp: {
+      api: {
+        conta: "http://idp.test/api/conta/",
+        confirmacao: "http://idp.test/api/conta/confirmacao/",
+        termos: "http://idp.test/api/conta/termos/",
+      },
+    },
+  },
 }));
 
 const { signin, signout, useAuth } = vi.hoisted(() => ({
@@ -34,6 +48,21 @@ vi.mock("react-router", async (importOriginal) => {
 });
 
 const ENDPOINT = "http://idp.test/o/userinfo/";
+const CONTA_URL = "http://idp.test/api/conta/";
+
+const CONTA = {
+  sub: "u1",
+  email: "a@x",
+  email_verified: true,
+  first_name: "Ana",
+  last_name: "Silva",
+  nickname: "Lila",
+  date_joined: "2026-01-01T00:00:00Z",
+  updated_at: "2026-01-02T00:00:00Z",
+  senha_alterada_em: null,
+  termos_versao: "1",
+  termos_versao_vigente: "1",
+};
 
 function fakeResponse(body: unknown, status = 200): Response {
   return {
@@ -43,8 +72,13 @@ function fakeResponse(body: unknown, status = 200): Response {
   } as unknown as Response;
 }
 
-function renderArea() {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+function renderArea(conta?: unknown) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  // A guarda só abre a área com a conta em cache: aqui o cache é semeado, e o mock de authGet
+  // distingue a URL da conta da do userinfo.
+  if (conta !== undefined) queryClient.setQueryData(["conta", "u1"], conta);
   return render(
     <MemoryRouter>
       <QueryClientProvider client={queryClient}>
@@ -199,5 +233,109 @@ describe("Area", () => {
     within(idTokenSection).getByText("Ana");
     within(userinfoSection).getByText("Ana");
     expect(screen.queryByText("(sem nome)")).toBeNull();
+  });
+  describe("com a conta em cache", () => {
+    beforeEach(() => {
+      authGet.mockImplementation((url: string) =>
+        Promise.resolve(
+          url === CONTA_URL
+            ? fakeResponse(CONTA)
+            : fakeResponse({ sub: "u1", name: "Ana", email: "a@x" }),
+        ),
+      );
+    });
+
+    it.each([
+      ["apelido", { nickname: "Lila", first_name: "Ana" }, "Olá, Lila!"],
+      ["nome, sem apelido", { nickname: "", first_name: "Ana" }, "Olá, Ana!"],
+      ["e-mail, sem apelido nem nome", { nickname: "", first_name: "" }, "Olá, a@x!"],
+    ])("T-01) saudação pelo %s", async (_, campos, texto) => {
+      renderArea({ ...CONTA, ...campos });
+
+      const saudacao = await screen.findByText(texto);
+      expect(saudacao.textContent).toBe(texto);
+      expect(saudacao.closest("section")).toBeNull();
+    });
+
+    it("T-01) link Minha conta fora das seções e id_token/userinfo com 3 dd cada", async () => {
+      renderArea(CONTA);
+
+      const link = await screen.findByRole("link", { name: "Minha conta" });
+      expect(link.getAttribute("href")).toBe("/app/conta");
+      expect(link.closest("section")).toBeNull();
+
+      const userinfo = sectionOf("userinfo");
+      await waitFor(() => expect(userinfo.querySelectorAll("dd")).toHaveLength(3));
+      expect(sectionOf("id_token").querySelectorAll("dd")).toHaveLength(3);
+      // A faixa não existe com e-mail confirmado; quando existe, também fica fora das seções.
+      expect(screen.queryByText("Confirme seu e-mail")).toBeNull();
+    });
+
+    it("T-01) a faixa de confirmação fica fora de qualquer seção", async () => {
+      renderArea({ ...CONTA, email_verified: false });
+
+      const faixa = await screen.findByText("Confirme seu e-mail");
+      expect(faixa.closest("section")).toBeNull();
+      expect(screen.getByRole("button", { name: "Reenviar" }).closest("section")).toBeNull();
+    });
+
+    it("T-02) com e-mail confirmado não há faixa nem Reenviar", async () => {
+      renderArea(CONTA);
+
+      await screen.findByText("Olá, Lila!");
+      expect(screen.queryByText("Confirme seu e-mail")).toBeNull();
+      expect(screen.queryByRole("button", { name: "Reenviar" })).toBeNull();
+    });
+
+    it("T-02) 204: Reenviar chama authSend('POST','confirmacao') e mostra a confirmação", async () => {
+      authSend.mockResolvedValue(fakeResponse(undefined, 204));
+      renderArea({ ...CONTA, email_verified: false });
+
+      fireEvent.click(await screen.findByRole("button", { name: "Reenviar" }));
+
+      await screen.findByText("Se o e-mail ainda não foi confirmado, enviamos um novo link.");
+      expect(authSend).toHaveBeenCalledTimes(1);
+      expect(authSend).toHaveBeenCalledWith("POST", "confirmacao");
+    });
+
+    it("T-02) 429: mensagem de muitas tentativas em role=alert", async () => {
+      authSend.mockResolvedValue(fakeResponse(undefined, 429));
+      renderArea({ ...CONTA, email_verified: false });
+
+      fireEvent.click(await screen.findByRole("button", { name: "Reenviar" }));
+
+      expect((await screen.findByRole("alert")).textContent).toBe(
+        "Muitas tentativas. Tente de novo em instantes.",
+      );
+      expect(screen.queryByText(/enviamos um novo link/)).toBeNull();
+    });
+
+    it("T-02) 500: 'Não foi possível reenviar.' em role=alert", async () => {
+      authSend.mockResolvedValue(fakeResponse(undefined, 500));
+      renderArea({ ...CONTA, email_verified: false });
+
+      fireEvent.click(await screen.findByRole("button", { name: "Reenviar" }));
+
+      expect((await screen.findByRole("alert")).textContent).toBe("Não foi possível reenviar.");
+    });
+
+    it("T-02) durante o envio o botão fica desabilitado", async () => {
+      let liberar!: (r: Response) => void;
+      authSend.mockImplementation(() => new Promise<Response>((res) => (liberar = res)));
+      renderArea({ ...CONTA, email_verified: false });
+
+      fireEvent.click(await screen.findByRole("button", { name: "Reenviar" }));
+
+      await waitFor(() =>
+        expect(screen.getByRole<HTMLButtonElement>("button", { name: "Reenviar" }).disabled).toBe(
+          true,
+        ),
+      );
+      liberar(fakeResponse(undefined, 204));
+      await screen.findByText("Se o e-mail ainda não foi confirmado, enviamos um novo link.");
+      expect(screen.getByRole<HTMLButtonElement>("button", { name: "Reenviar" }).disabled).toBe(
+        false,
+      );
+    });
   });
 });

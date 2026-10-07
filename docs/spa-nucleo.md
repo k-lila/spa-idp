@@ -39,8 +39,9 @@ contrarie isso está errada, mesmo que seja "o padrão" em um projeto React comu
 ## §2. Invariantes (não-negociáveis)
 
 - **I1.** A SPA é uma Relying Party. Ela **NÃO DEVE** se comportar como dona da
-  identidade, **NÃO DEVE** coletar senha e **NÃO DEVE** escrever no diretório de
-  usuários usando o `access_token` da RP.
+  identidade e **NÃO DEVE** coletar senha. **NÃO DEVE** escrever no diretório de
+  usuários com o `access_token` da RP, **exceto** na conta da própria pessoa
+  autenticada, pela API de conta do IdP, com o scope `conta` (ADR 0020).
 - **I2.** Autenticação **DEVE** ser por redirect + PKCE (`S256`). Login e
   consentimento vivem no IdP, em outro origin; a SPA entrega e retoma.
 - **I3.** Tokens **DEVEM** viver em memória. **NÃO DEVEM** ser persistidos em
@@ -49,7 +50,10 @@ contrarie isso está errada, mesmo que seja "o padrão" em um projeto React comu
   via JWKS (RS256), `iss` = `{issuer}`, `aud` = `client_id`, `exp`, `nonce`.
 - **I5.** Endpoints **DEVEM** ser descobertos via discovery
   (`/.well-known/openid-configuration`). Apenas o issuer base entra por
-  configuração; o resto **NÃO DEVE** ser hardcoded.
+  configuração; o resto **NÃO DEVE** ser hardcoded. Exceção: os caminhos fixos da
+  API de conta (`/api/conta/…`) e das páginas de conta do IdP (`/accounts/…`), que
+  a descoberta não publica, **DEVEM** ser montados sobre a origem do issuer, só em
+  `src/config.ts` (ADR 0020). Nenhum endpoint OIDC entra na exceção.
 - **I6.** `issuer`, `client_id` e `redirect_uri` **DEVEM** vir de variáveis de
   ambiente (`VITE_*`) e **NÃO DEVEM** ser commitados nem fixados no código.
 - **I7.** TypeScript **DEVE** rodar em `strict`. Dados que cruzam a borda
@@ -69,9 +73,9 @@ contrarie isso está errada, mesmo que seja "o padrão" em um projeto React comu
 | Rigor de tipos | **TS `strict` + ESLint + Prettier** | Erro de contrato em compile-time; espelha o rigor do back-end |
 | Roteamento | **React Router v7**, data router (ADR 0003) | Rota de callback, guarda de rota (I8), deep-link (ADR 0011) |
 | Auth / OIDC | **`oidc-client-ts`** (D1, ADR 0006) + **`jose`** (ADR 0013) | PKCE, troca de token, logout (ADR 0019); `jose` verifica o `id_token` (I4). Sem silent renew (ADR 0014) |
-| Cliente HTTP | **wrapper de `fetch`** em `src/api/http.ts` (ADR 0008) | Anexa `Bearer`; trata `401` → re-auth |
-| Estado de servidor | **TanStack Query** (ADR 0009) | Cache do `userinfo`, chaveado pelo `sub`; loading/erro |
-| Config por ambiente | **Vite env (`VITE_*`)** validado em `src/config.ts` (ADR 0005) | Issuer, `client_id`, `redirect_uri` e `post_logout_redirect_uri` por ambiente (I6) |
+| Cliente HTTP | **wrapper de `fetch`** em `src/api/http.ts` (ADR 0008) | Anexa `Bearer`; GET, e PATCH/POST com JSON só na API de conta; `401` → re-auth com volta à página atual, uma por URL (ADRs 0008, 0020) |
+| Estado de servidor | **TanStack Query** (ADR 0009) | Cache do `userinfo` e da conta, chaveados pelo `sub`; loading/erro (ADRs 0009, 0020) |
+| Config por ambiente | **Vite env (`VITE_*`)** validado em `src/config.ts` (ADR 0005) | Issuer, `client_id`, `redirect_uri` e `post_logout_redirect_uri` por ambiente (I6), e caminhos fixos do IdP derivados do issuer (I5) |
 | Validação de borda | **zod** (ADR 0007) | Valida claims e payloads em runtime (I7) |
 
 ---
@@ -91,9 +95,11 @@ contrarie isso está errada, mesmo que seja "o padrão" em um projeto React comu
 ## §5. Decisões fixadas
 
 - **D1 — Biblioteca OIDC.** `oidc-client-ts`, não PKCE à mão (ADR 0006).
-- **D2 — Gestão de conta.** Nenhuma nesta fase: nem na SPA, nem por link ao IdP,
-  que não tem páginas de cadastro ou edição de perfil. Contas são criadas pelo admin
-  do IdP (ADR 0012).
+- **D2 — Gestão de conta.** Pelas telas da SPA, sobre a API de conta do IdP (ler e
+  editar nome, sobrenome e apelido, aceitar os termos, reenviar a confirmação), e
+  pelas páginas do IdP para tudo o que pede senha (cadastro, recuperação, troca de
+  senha e de e-mail, exclusão), alcançadas por navegação de página inteira
+  (ADR 0020).
 - **Sessão no reload.** Redirect ao IdP + sessão de login dele (SSO); tokens só em
   memória; o `refresh_token` que o IdP devolve é recebido e nunca usado (ADR 0014).
 
@@ -106,8 +112,10 @@ contrarie isso está errada, mesmo que seja "o padrão" em um projeto React comu
 - **NÃO DEVE** criar tela ou campo de senha na SPA (I8).
 - **NÃO DEVE** hardcodar issuer, `client_id`, `redirect_uri` ou
   `post_logout_redirect_uri` (I6).
-- **NÃO DEVE** chamar a API de conta com o `access_token` da RP — confusão de
-  audiência (I1); gestão de conta está fora do escopo (D2).
+- **NÃO DEVE** escrever com o `access_token` fora da API de conta do IdP (I1).
+- **NÃO DEVE** montar URL do IdP fora de `src/config.ts` (I5).
+- **NÃO DEVE** chamar página de conta do IdP por `fetch`: chega a elas só por
+  navegação de página inteira (I1, I8, ADR 0020).
 - **NÃO DEVE** adicionar estado global pesado (Redux/MobX): o único global real
   é sessão/auth.
 - **NÃO DEVE** introduzir biblioteca de UI; o estilo é Tailwind.
